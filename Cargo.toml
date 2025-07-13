@@ -1,0 +1,164 @@
+[package]
+name = "doc-ingest"
+version = "0.1.0"
+edition = "2021"
+authors = ["DAA Neural Coordinator"]
+description = "High-performance document ingestion and processing with DAA coordination and neural enhancement"
+
+[workspace]
+members = [
+    "neural-doc-flow-core",
+    "neural-doc-flow-coordination",
+    "neural-doc-flow-processors",
+    "neural-doc-flow-sources",
+    "neural-doc-flow-outputs",
+    "neural-doc-flow"
+]
+
+[workspace.package]
+edition = "2021"
+authors = ["DAA Neural Coordinator"]
+version = "0.1.0"
+homepage = "https://github.com/daa-neural/doc-ingest"
+repository = "https://github.com/daa-neural/doc-ingest"
+license = "MIT"
+documentation = "https://docs.rs/neural-doc-flow"
+keywords = ["document", "neural", "processing", "extraction", "daa"]
+categories = ["text-processing", "science"]
+
+[workspace.dependencies]
+# Core async and error handling
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Async traits and utilities
+async-trait = "0.1"
+futures = "0.3"
+
+# Concurrency
+rayon = "1.7"
+crossbeam = "0.8"
+parking_lot = "0.12"
+dashmap = "5.4"
+
+# Metrics and monitoring
+metrics = { version = "0.21" }
+opentelemetry = { version = "0.21" }
+prometheus = { version = "0.13" }
+
+# Text processing
+regex = "1.0"
+unicode-normalization = "0.1"
+
+# Memory and performance
+ndarray = { version = "0.15" }
+
+# Dev dependencies
+criterion = "0.5"
+proptest = "1.0"
+tempfile = "3.0"
+test-log = "0.2"
+pretty_assertions = "1.4"
+
+# SIMD dependencies
+wide = "0.7"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+regex = "1.0"
+
+# Local workspace dependencies
+# neural-doc-flow = { path = "neural-doc-flow" }
+neural-doc-flow-core = { path = "neural-doc-flow-core" }
+neural-doc-flow-coordination = { path = "neural-doc-flow-coordination" }
+neural-doc-flow-processors = { path = "neural-doc-flow-processors" }
+
+# Neural processing dependencies
+# candle-core = { version = "0.3", optional = true }
+# candle-nn = { version = "0.3", optional = true }
+# tch = { version = "0.13", optional = true }
+
+# SIMD dependencies
+wide = "0.7"
+
+# Document processing dependencies (simplified for phase 1)
+# pdf = { version = "0.8", optional = true }
+# lopdf = { version = "0.26", optional = true } 
+# image = { version = "0.24", optional = true }
+# tesseract = { version = "0.13", optional = true }
+
+# Performance monitoring
+prometheus = { version = "0.13", optional = true }
+metrics = { version = "0.21", optional = true }
+
+# Additional utilities
+rayon = "1.7"
+crossbeam = "0.8"
+parking_lot = "0.12"
+dashmap = "5.4"
+
+[features]
+default = ["monitoring"]
+# neural = ["candle-core", "candle-nn"]
+# pytorch = ["tch"]
+# pdf-processing = ["pdf", "lopdf"]
+# ocr = ["image", "tesseract"]
+monitoring = ["prometheus", "metrics"]
+simd = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[[bin]]
+name = "doc-ingest-server"
+path = "src/bin/server.rs"
+
+[[bin]]
+name = "doc-ingest-cli"
+path = "src/bin/cli.rs"
+
+[[example]]
+name = "neural_processing_demo"
+path = "examples/neural_processing.rs"
+
+[[example]]
+name = "daa_coordination_demo" 
+path = "examples/daa_coordination.rs"
+
+[dev-dependencies]
+criterion = "0.5"
+tempfile = "3.0"
+proptest = "1.0"
+
+[[bench]]
+name = "neural_performance"
+harness = false
+
+[[bench]]
+name = "coordination_performance"
+harness = false
