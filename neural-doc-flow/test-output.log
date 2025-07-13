@@ -1,0 +1,1708 @@
+   Compiling tokio v1.46.1
+   Compiling ciborium-ll v0.2.2
+   Compiling ciborium v0.2.2
+   Compiling plotters v0.3.7
+   Compiling tinytemplate v1.2.1
+   Compiling neural-doc-flow-core v0.1.0 (/workspaces/doc-ingest/neural-doc-flow-core)
+warning: field `name` is never read
+   --> neural-doc-flow-core/src/traits/processor.rs:252:16
+    |
+251 | pub struct PipelineBuilder {
+    |            --------------- field in this struct
+252 |     pub(crate) name: String,
+    |                ^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `neural-doc-flow-core` (lib) generated 1 warning
+   Compiling criterion v0.5.1
+   Compiling ahash v0.8.12
+   Compiling dashmap v5.5.3
+   Compiling neural-doc-flow-coordination v0.1.0 (/workspaces/doc-ingest/neural-doc-flow-coordination)
+error[E0412]: cannot find type `NeuralEngine` in this scope
+  --> neural-doc-flow-coordination/agents/controller.rs:13:38
+   |
+13 |     neural_engine: Option<Arc<RwLock<NeuralEngine>>>,
+   |                                      ^^^^^^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+9  | pub struct ControllerAgent<NeuralEngine> {
+   |                           ++++++++++++++
+
+error[E0412]: cannot find type `NeuralEngine` in this scope
+  --> neural-doc-flow-coordination/agents/extractor.rs:13:38
+   |
+13 |     neural_engine: Option<Arc<RwLock<NeuralEngine>>>,
+   |                                      ^^^^^^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+9  | pub struct ExtractorAgent<NeuralEngine> {
+   |                          ++++++++++++++
+
+error[E0412]: cannot find type `NeuralEngine` in this scope
+   --> neural-doc-flow-coordination/agents/extractor.rs:105:60
+    |
+105 |     pub fn set_neural_engine(&mut self, engine: Arc<RwLock<NeuralEngine>>) {
+    |                                                            ^^^^^^^^^^^^ not found in this scope
+    |
+help: you might be missing a type parameter
+    |
+80  | impl<NeuralEngine> ExtractorAgent {
+    |     ++++++++++++++
+
+warning: unused import: `MessageType`
+ --> neural-doc-flow-coordination/messaging/mod.rs:4:42
+  |
+4 | use super::agents::{CoordinationMessage, MessageType};
+  |                                          ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `crate::messaging::Message`
+  --> neural-doc-flow-coordination/messaging/fault_tolerance.rs:11:5
+   |
+11 | use crate::messaging::Message;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `broadcast`
+ --> neural-doc-flow-coordination/messaging/routing.rs:5:27
+  |
+5 | use tokio::sync::{RwLock, broadcast};
+  |                           ^^^^^^^^^
+
+warning: unused import: `broadcast`
+ --> neural-doc-flow-coordination/messaging/protocols.rs:2:27
+  |
+2 | use tokio::sync::{RwLock, broadcast, mpsc};
+  |                           ^^^^^^^^^
+
+warning: unused imports: `Deserialize` and `Serialize`
+ --> neural-doc-flow-coordination/messaging/protocols.rs:4:13
+  |
+4 | use serde::{Serialize, Deserialize};
+  |             ^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused imports: `AgentState`, `MessagePriority`, and `Message`
+  --> neural-doc-flow-coordination/fault_tolerance.rs:12:27
+   |
+12 |     agents::base::{Agent, AgentState},
+   |                           ^^^^^^^^^^
+13 |     messaging::{Message, MessagePriority},
+   |                 ^^^^^^^  ^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/lib.rs:131:42
+    |
+131 |             topology.add_agent(agent_id, agent_type)?;
+    |                      ---------           ^^^^^^^^^^ expected `AgentType`, found `&AgentType`
+    |                      |
+    |                      arguments to this method are incorrect
+    |
+note: method defined here
+   --> neural-doc-flow-coordination/topologies/mod.rs:279:12
+    |
+279 |     pub fn add_agent(&mut self, agent_id: Uuid, agent_type: super::agents::AgentType) -> Result<(), Box<dyn std::error::Error>> {
+    |            ^^^^^^^^^                            ------------------------------------
+help: consider using clone here
+    |
+131 |             topology.add_agent(agent_id, agent_type.clone())?;
+    |                                                    ++++++++
+
+warning: unused variable: `start_time`
+   --> neural-doc-flow-coordination/lib.rs:149:13
+    |
+149 |         let start_time = std::time::Instant::now();
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_start_time`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/lib.rs:195:61
+    |
+195 |                 data = self.simulate_agent_processing(data, &agent_type).await;
+    |                             -------------------------       ^^^^^^^^^^^ expected `AgentType`, found `&AgentType`
+    |                             |
+    |                             arguments to this method are incorrect
+    |
+note: method defined here
+   --> neural-doc-flow-coordination/lib.rs:300:14
+    |
+300 |     async fn simulate_agent_processing(&self, data: Vec<u8>, agent_type: agents::AgentType) -> Vec<u8> {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^                       -----------------------------
+help: consider removing the borrow
+    |
+195 -                 data = self.simulate_agent_processing(data, &agent_type).await;
+195 +                 data = self.simulate_agent_processing(data, agent_type).await;
+    |
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/lib.rs:212:61
+    |
+212 |             if let Some(agent_id) = self.find_agent_by_type(agent_type).await {
+    |                                          ------------------ ^^^^^^^^^^ expected `&AgentType`, found `AgentType`
+    |                                          |
+    |                                          arguments to this method are incorrect
+    |
+note: method defined here
+   --> neural-doc-flow-coordination/lib.rs:293:14
+    |
+293 |     async fn find_agent_by_type(&self, agent_type: &agents::AgentType) -> Option<Uuid> {
+    |              ^^^^^^^^^^^^^^^^^^        ------------------------------
+help: consider borrowing here
+    |
+212 |             if let Some(agent_id) = self.find_agent_by_type(&agent_type).await {
+    |                                                             +
+
+error[E0277]: `dyn StdError` cannot be sent between threads safely
+   --> neural-doc-flow-coordination/lib.rs:216:41
+    |
+216 |                   let task = tokio::spawn(async move {
+    |  ____________________________------------_^
+    | |                            |
+    | |                            required by a bound introduced by this call
+217 | |                     let message = agents::CoordinationMessage {
+218 | |                         id: Uuid::new_v4(),
+219 | |                         from: Uuid::new_v4(),
+...   |
+227 | |                     message_bus.send_message(message).await
+228 | |                 });
+    | |_________________^ `dyn StdError` cannot be sent between threads safely
+    |
+    = help: the trait `Send` is not implemented for `dyn StdError`
+    = note: required for `Unique<dyn StdError>` to implement `Send`
+note: required because it appears within the type `Box<dyn StdError>`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/alloc/src/boxed.rs:231:12
+note: required because it appears within the type `Result<(), Box<dyn StdError>>`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/core/src/result.rs:548:10
+note: required by a bound in `tokio::spawn`
+   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-1.46.1/src/task/spawn.rs:169:20
+    |
+166 |     pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
+    |            ----- required by a bound in this function
+...
+169 |         F::Output: Send + 'static,
+    |                    ^^^^ required by this bound in `spawn`
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/lib.rs:253:61
+    |
+253 |             if let Some(agent_id) = self.find_agent_by_type(stage_type).await {
+    |                                          ------------------ ^^^^^^^^^^ expected `&AgentType`, found `AgentType`
+    |                                          |
+    |                                          arguments to this method are incorrect
+    |
+note: method defined here
+   --> neural-doc-flow-coordination/lib.rs:293:14
+    |
+293 |     async fn find_agent_by_type(&self, agent_type: &agents::AgentType) -> Option<Uuid> {
+    |              ^^^^^^^^^^^^^^^^^^        ------------------------------
+help: consider borrowing here
+    |
+253 |             if let Some(agent_id) = self.find_agent_by_type(&stage_type).await {
+    |                                                             +
+
+warning: unused variable: `agent_type`
+   --> neural-doc-flow-coordination/lib.rs:293:40
+    |
+293 |     async fn find_agent_by_type(&self, agent_type: &agents::AgentType) -> Option<Uuid> {
+    |                                        ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_agent_type`
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/lib.rs:377:35
+    |
+377 |             self.auto_spawn_agent(agents::AgentType::Enhancer, capabilities).await?;
+    |                  ---------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&AgentType`, found `AgentType`
+    |                  |
+    |                  arguments to this method are incorrect
+    |
+note: method defined here
+   --> neural-doc-flow-coordination/lib.rs:117:18
+    |
+117 |     pub async fn auto_spawn_agent(
+    |                  ^^^^^^^^^^^^^^^^
+118 |         &self,
+119 |         agent_type: &agents::AgentType,
+    |         ------------------------------
+help: consider borrowing here
+    |
+377 |             self.auto_spawn_agent(&agents::AgentType::Enhancer, capabilities).await?;
+    |                                   +
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/lib.rs:437:33
+    |
+437 |         system.auto_spawn_agent(agent_type, capabilities).await?;
+    |                ---------------- ^^^^^^^^^^ expected `&AgentType`, found `AgentType`
+    |                |
+    |                arguments to this method are incorrect
+    |
+note: method defined here
+   --> neural-doc-flow-coordination/lib.rs:117:18
+    |
+117 |     pub async fn auto_spawn_agent(
+    |                  ^^^^^^^^^^^^^^^^
+118 |         &self,
+119 |         agent_type: &agents::AgentType,
+    |         ------------------------------
+help: consider borrowing here
+    |
+437 |         system.auto_spawn_agent(&agent_type, capabilities).await?;
+    |                                 +
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+  --> neural-doc-flow-coordination/agents/mod.rs:86:60
+   |
+86 |     agents: Arc<RwLock<std::collections::HashMap<Uuid, Box<dyn DaaAgent>>>>,
+   |                                                            ^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+   |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+  --> neural-doc-flow-coordination/agents/mod.rs:55:14
+   |
+49 | pub trait DaaAgent: Send + Sync {
+   |           -------- this trait is not dyn compatible...
+...
+55 |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56 |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+   |              ^^^^^^^ ...because method `process` is `async`
+57 |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58 |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^ ...because method `shutdown` is `async`
+   = help: consider moving `shutdown` to another trait
+   = help: consider moving `initialize` to another trait
+   = help: consider moving `process` to another trait
+   = help: consider moving `coordinate` to another trait
+   = help: the following types implement `agents::DaaAgent`:
+             agents::controller::ControllerAgent
+             agents::extractor::ExtractorAgent
+           consider defining an enum where each variant holds one of these types,
+           implementing `agents::DaaAgent` for this new enum and using it instead
+   = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:100:51
+    |
+100 |     pub async fn register_agent(&self, agent: Box<dyn DaaAgent>) -> Result<Uuid, Box<dyn std::error::Error>> {
+    |                                                   ^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:101:24
+    |
+101 |         let id = agent.id();
+    |                        ^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:101:18
+    |
+101 |         let id = agent.id();
+    |                  ^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:102:26
+    |
+102 |         let mut agents = self.agents.write().await;
+    |                          ^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:102:46
+    |
+102 |         let mut agents = self.agents.write().await;
+    |                                              ^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:103:9
+    |
+103 |         agents.insert(id, agent);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:121:30
+    |
+121 |                 let agents = self.agents.read().await;
+    |                              ^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:121:49
+    |
+121 |                 let agents = self.agents.read().await;
+    |                                                 ^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:122:38
+    |
+122 |                 if let Some(agent) = agents.get(&target_id) {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:127:30
+    |
+127 |                 let agents = self.agents.read().await;
+    |                              ^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:127:49
+    |
+127 |                 let agents = self.agents.read().await;
+    |                                                 ^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:128:35
+    |
+128 |                 for (_, agent) in agents.iter() {
+    |                                   ^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:144:16
+    |
+144 |     let agent: Box<dyn DaaAgent> = match agent_type {
+    |                ^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:145:34
+    |
+145 |         AgentType::Controller => Box::new(controller::ControllerAgent::new(capabilities)),
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+    = note: required for the cast from `Box<ControllerAgent>` to `Box<dyn agents::DaaAgent>`
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:146:33
+    |
+146 |         AgentType::Extractor => Box::new(extractor::ExtractorAgent::new(capabilities)),
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+    = note: required for the cast from `Box<ExtractorAgent>` to `Box<dyn agents::DaaAgent>`
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/mod.rs:147:73
+    |
+147 |         AgentType::Validator => Box::new(validator::ValidatorAgent::new(capabilities)),
+    |                                          ------------------------------ ^^^^^^^^^^^^ expected `Sender<Message>`, found `AgentCapabilities`
+    |                                          |
+    |                                          arguments to this function are incorrect
+    |
+    = note: expected struct `tokio::sync::broadcast::Sender<Message>`
+               found struct `agents::AgentCapabilities`
+note: associated function defined here
+   --> neural-doc-flow-coordination/agents/validator.rs:86:12
+    |
+86  |     pub fn new(message_sender: broadcast::Sender<Message>) -> Self {
+    |            ^^^ ------------------------------------------
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:147:33
+    |
+147 |         AgentType::Validator => Box::new(validator::ValidatorAgent::new(capabilities)),
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+    = note: required for the cast from `Box<ValidatorAgent>` to `Box<dyn agents::DaaAgent>`
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/mod.rs:148:70
+    |
+148 |         AgentType::Enhancer => Box::new(enhancer::EnhancerAgent::new(capabilities)),
+    |                                         ---------------------------- ^^^^^^^^^^^^ expected `Sender<Message>`, found `AgentCapabilities`
+    |                                         |
+    |                                         arguments to this function are incorrect
+    |
+    = note: expected struct `tokio::sync::broadcast::Sender<Message>`
+               found struct `agents::AgentCapabilities`
+note: associated function defined here
+   --> neural-doc-flow-coordination/agents/enhancer.rs:164:12
+    |
+164 |     pub fn new(message_sender: broadcast::Sender<Message>) -> Self {
+    |            ^^^ ------------------------------------------
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:148:32
+    |
+148 |         AgentType::Enhancer => Box::new(enhancer::EnhancerAgent::new(capabilities)),
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+    = note: required for the cast from `Box<EnhancerAgent>` to `Box<dyn agents::DaaAgent>`
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/mod.rs:149:73
+    |
+149 |         AgentType::Formatter => Box::new(formatter::FormatterAgent::new(capabilities)),
+    |                                          ------------------------------ ^^^^^^^^^^^^ expected `Sender<Message>`, found `AgentCapabilities`
+    |                                          |
+    |                                          arguments to this function are incorrect
+    |
+    = note: expected struct `tokio::sync::broadcast::Sender<Message>`
+               found struct `agents::AgentCapabilities`
+note: associated function defined here
+   --> neural-doc-flow-coordination/agents/formatter.rs:233:12
+    |
+233 |     pub fn new(message_sender: broadcast::Sender<Message>) -> Self {
+    |            ^^^ ------------------------------------------
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:149:33
+    |
+149 |         AgentType::Formatter => Box::new(formatter::FormatterAgent::new(capabilities)),
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+    = note: required for the cast from `Box<FormatterAgent>` to `Box<dyn agents::DaaAgent>`
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+   --> neural-doc-flow-coordination/agents/mod.rs:152:14
+    |
+152 |     registry.register_agent(agent).await
+    |              ^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> neural-doc-flow-coordination/agents/mod.rs:55:14
+    |
+49  | pub trait DaaAgent: Send + Sync {
+    |           -------- this trait is not dyn compatible...
+...
+55  |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56  |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    |              ^^^^^^^ ...because method `process` is `async`
+57  |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58  |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    |              ^^^^^^^^ ...because method `shutdown` is `async`
+    = help: consider moving `shutdown` to another trait
+    = help: consider moving `initialize` to another trait
+    = help: consider moving `process` to another trait
+    = help: consider moving `coordinate` to another trait
+    = help: the following types implement `agents::DaaAgent`:
+              agents::controller::ControllerAgent
+              agents::extractor::ExtractorAgent
+            consider defining an enum where each variant holds one of these types,
+            implementing `agents::DaaAgent` for this new enum and using it instead
+    = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/extractor.rs:239:16
+    |
+236 |         let mut text = html.clone();
+    |                        ------------ expected due to this value
+...
+239 |         text = regex::Regex::new(r"<script[^>]*>.*?</script>").unwrap().replace_all(&text, "").to_string();
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Cow<'_, str>`, found `String`
+    |
+    = note: expected enum `Cow<'_, str>`
+             found struct `std::string::String`
+help: try removing the method call
+    |
+239 -         text = regex::Regex::new(r"<script[^>]*>.*?</script>").unwrap().replace_all(&text, "").to_string();
+239 +         text = regex::Regex::new(r"<script[^>]*>.*?</script>").unwrap().replace_all(&text, "");
+    |
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/extractor.rs:240:16
+    |
+236 |         let mut text = html.clone();
+    |                        ------------ expected due to this value
+...
+240 |         text = regex::Regex::new(r"<style[^>]*>.*?</style>").unwrap().replace_all(&text, "").to_string();
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Cow<'_, str>`, found `String`
+    |
+    = note: expected enum `Cow<'_, str>`
+             found struct `std::string::String`
+help: try removing the method call
+    |
+240 -         text = regex::Regex::new(r"<style[^>]*>.*?</style>").unwrap().replace_all(&text, "").to_string();
+240 +         text = regex::Regex::new(r"<style[^>]*>.*?</style>").unwrap().replace_all(&text, "");
+    |
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/extractor.rs:243:16
+    |
+236 |         let mut text = html.clone();
+    |                        ------------ expected due to this value
+...
+243 |         text = regex::Regex::new(r"<[^>]+>").unwrap().replace_all(&text, " ").to_string();
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Cow<'_, str>`, found `String`
+    |
+    = note: expected enum `Cow<'_, str>`
+             found struct `std::string::String`
+help: try removing the method call
+    |
+243 -         text = regex::Regex::new(r"<[^>]+>").unwrap().replace_all(&text, " ").to_string();
+243 +         text = regex::Regex::new(r"<[^>]+>").unwrap().replace_all(&text, " ");
+    |
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/extractor.rs:246:16
+    |
+236 |         let mut text = html.clone();
+    |                        ------------ expected due to this value
+...
+246 |         text = regex::Regex::new(r"\s+").unwrap().replace_all(&text, " ").to_string();
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Cow<'_, str>`, found `String`
+    |
+    = note: expected enum `Cow<'_, str>`
+             found struct `std::string::String`
+help: try removing the method call
+    |
+246 -         text = regex::Regex::new(r"\s+").unwrap().replace_all(&text, " ").to_string();
+246 +         text = regex::Regex::new(r"\s+").unwrap().replace_all(&text, " ");
+    |
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/extractor.rs:247:16
+    |
+236 |         let mut text = html.clone();
+    |                        ------------ expected due to this value
+...
+247 |         text = text.trim().to_string();
+    |                ^^^^^^^^^^^^^^^^^^^^^^^ expected `Cow<'_, str>`, found `String`
+    |
+    = note: expected enum `Cow<'_, str>`
+             found struct `std::string::String`
+help: call `Into::into` on this expression to convert `std::string::String` into `Cow<'_, str>`
+    |
+247 |         text = text.trim().to_string().into();
+    |                                       +++++++
+
+error[E0308]: mismatched types
+   --> neural-doc-flow-coordination/agents/extractor.rs:263:29
+    |
+263 |             extracted_text: text,
+    |                             ^^^^- help: try using a conversion method: `.to_string()`
+    |                             |
+    |                             expected `String`, found `Cow<'_, str>`
+    |
+    = note: expected struct `std::string::String`
+                 found enum `Cow<'_, str>`
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> neural-doc-flow-coordination/agents/extractor.rs:459:17
+    |
+459 |             let enhanced_bytes = engine_guard.enhance_text(text_bytes).await?;
+    |                 ^^^^^^^^^^^^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `[u8]`
+    = note: all local variables must have a statically known size
+    = help: unsized locals are gated as an unstable feature
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> neural-doc-flow-coordination/agents/extractor.rs:459:34
+    |
+459 |             let enhanced_bytes = engine_guard.enhance_text(text_bytes).await?;
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `[u8]`
+    = note: all local variables must have a statically known size
+    = help: unsized locals are gated as an unstable feature
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> neural-doc-flow-coordination/agents/extractor.rs:459:77
+    |
+459 |             let enhanced_bytes = engine_guard.enhance_text(text_bytes).await?;
+    |                                                                             ^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `[u8]`
+note: required by a bound in `Break`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/core/src/ops/control_flow.rs:95:5
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> neural-doc-flow-coordination/agents/extractor.rs:459:34
+    |
+459 |             let enhanced_bytes = engine_guard.enhance_text(text_bytes).await?;
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `[u8]`
+note: required by a bound in `Continue`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/core/src/ops/control_flow.rs:91:5
+
+warning: unused variable: `original_data`
+   --> neural-doc-flow-coordination/agents/extractor.rs:476:9
+    |
+476 |         original_data: &[u8],
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_original_data`
+
+warning: unused variable: `doc_id`
+   --> neural-doc-flow-coordination/agents/enhancer.rs:188:38
+    |
+188 |     async fn enhance_document(&self, doc_id: String, content: &str) -> Result<EnhancedContent> {
+    |                                      ^^^^^^ help: if this is intentional, prefix it with an underscore: `_doc_id`
+
+error[E0599]: the method `clone` exists for struct `Box<dyn FormatHandler>`, but its trait bounds were not satisfied
+   --> neural-doc-flow-coordination/agents/formatter.rs:250:45
+    |
+22  | pub trait FormatHandler: Send + Sync {
+    | ------------------------------------ doesn't satisfy `dyn FormatHandler: Clone` or `dyn FormatHandler: Sized`
+...
+250 |             handlers.insert(format, handler.clone());
+    |                                             ^^^^^ method cannot be called on `Box<dyn FormatHandler>` due to unsatisfied trait bounds
+    |
+    = note: the following trait bounds were not satisfied:
+            `dyn FormatHandler: Sized`
+            which is required by `Box<dyn FormatHandler>: Clone`
+            `dyn FormatHandler: Clone`
+            which is required by `Box<dyn FormatHandler>: Clone`
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+warning: unused variable: `doc_id`
+   --> neural-doc-flow-coordination/agents/formatter.rs:259:37
+    |
+259 |     async fn format_document(&self, doc_id: String, content: &str, format: &str, style_name: &str) -> Result<FormattedContent> {
+    |                                     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_doc_id`
+
+error[E0277]: `(dyn FnOnce(Message) + Send + 'static)` cannot be shared between threads safely
+   --> neural-doc-flow-coordination/messaging/protocols.rs:54:22
+    |
+54  |           tokio::spawn(async move {
+    |  _________------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+55  | |             tokio::time::sleep(timeout).await;
+56  | |             let mut pending = pending_requests.write().await;
+57  | |             if pending.remove(&request_id).is_some() {
+...   |
+60  | |         });
+    | |_________^ `(dyn FnOnce(Message) + Send + 'static)` cannot be shared between threads safely
+    |
+    = help: the trait `Sync` is not implemented for `(dyn FnOnce(Message) + Send + 'static)`
+    = note: required for `Unique<(dyn FnOnce(Message) + Send + 'static)>` to implement `Sync`
+note: required because it appears within the type `Box<(dyn FnOnce(Message) + Send + 'static)>`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/alloc/src/boxed.rs:231:12
+    = note: required because it appears within the type `(uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>)`
+    = note: required for `hashbrown::raw::RawTable<(uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>)>` to implement `Sync`
+note: required because it appears within the type `hashbrown::map::HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>, RandomState>`
+   --> /rust/deps/hashbrown-0.15.3/src/map.rs:185:12
+note: required because it appears within the type `HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/std/src/collections/hash/map.rs:242:12
+    = note: required for `tokio::sync::RwLock<HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>>` to implement `Sync`
+    = note: required for `Arc<tokio::sync::RwLock<HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>>>` to implement `Send`
+note: required because it's used within this `async` block
+   --> neural-doc-flow-coordination/messaging/protocols.rs:54:22
+    |
+54  |         tokio::spawn(async move {
+    |                      ^^^^^^^^^^
+note: required by a bound in `tokio::spawn`
+   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-1.46.1/src/task/spawn.rs:168:21
+    |
+166 |     pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
+    |            ----- required by a bound in this function
+167 |     where
+168 |         F: Future + Send + 'static,
+    |                     ^^^^ required by this bound in `spawn`
+help: use parentheses to call this trait object
+    |
+60  |         }(/* Message */));
+    |          +++++++++++++++
+
+error[E0277]: the trait bound `GossipValue: _::_serde::Serialize` is not satisfied
+   --> neural-doc-flow-coordination/messaging/protocols.rs:384:48
+    |
+384 |                 "state": serde_json::to_value(&state.values).unwrap(),
+    |                          --------------------  ^^^^^^^^^^^^ the trait `_::_serde::Serialize` is not implemented for `GossipValue`
+    |                          |
+    |                          required by a bound introduced by this call
+    |
+    = note: for local types consider adding `#[derive(serde::Serialize)]` to your `GossipValue` type
+    = note: for types from other crates check whether the crate offers a `serde` feature flag
+    = help: the following other types implement trait `_::_serde::Serialize`:
+              &'a T
+              &'a mut T
+              ()
+              (T,)
+              (T0, T1)
+              (T0, T1, T2)
+              (T0, T1, T2, T3)
+              (T0, T1, T2, T3, T4)
+            and 288 others
+    = note: required for `HashMap<std::string::String, GossipValue>` to implement `_::_serde::Serialize`
+    = note: 1 redundant requirement hidden
+    = note: required for `&HashMap<std::string::String, GossipValue>` to implement `_::_serde::Serialize`
+note: required by a bound in `to_value`
+   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.140/src/value/mod.rs:990:8
+    |
+988 | pub fn to_value<T>(value: T) -> Result<Value, Error>
+    |        -------- required by a bound in this function
+989 | where
+990 |     T: Serialize,
+    |        ^^^^^^^^^ required by this bound in `to_value`
+
+error[E0599]: the method `insert` exists for struct `RwLockWriteGuard<'_, HashMap<ProtocolType, Box<dyn ProtocolHandler>>>`, but its trait bounds were not satisfied
+   --> neural-doc-flow-coordination/messaging/protocols.rs:450:18
+    |
+12  | pub enum ProtocolType {
+    | --------------------- doesn't satisfy `ProtocolType: Hash`
+...
+450 |         handlers.insert(handler.protocol_type(), handler);
+    |                  ^^^^^^
+    |
+    = note: the following trait bounds were not satisfied:
+            `ProtocolType: Hash`
+help: consider annotating `ProtocolType` with `#[derive(Hash)]`
+    |
+12  + #[derive(Hash)]
+13  | pub enum ProtocolType {
+    |
+
+error[E0599]: the method `get` exists for struct `RwLockReadGuard<'_, HashMap<ProtocolType, Box<dyn ProtocolHandler>>>`, but its trait bounds were not satisfied
+   --> neural-doc-flow-coordination/messaging/protocols.rs:455:41
+    |
+12  | pub enum ProtocolType {
+    | --------------------- doesn't satisfy `ProtocolType: Hash`
+...
+455 |         if let Some(handler) = handlers.get(&protocol) {
+    |                                         ^^^ method cannot be called due to unsatisfied trait bounds
+    |
+    = note: the following trait bounds were not satisfied:
+            `ProtocolType: Hash`
+help: consider annotating `ProtocolType` with `#[derive(Hash)]`
+    |
+12  + #[derive(Hash)]
+13  | pub enum ProtocolType {
+    |
+
+error[E0499]: cannot borrow `ft_manager` as mutable more than once at a time
+   --> neural-doc-flow-coordination/messaging/mod.rs:436:40
+    |
+424 |         let failure_info = ft_manager.failed_agents.entry(agent_id).or_insert(FailureInfo {
+    |                            ---------- first mutable borrow occurs here
+...
+436 |         if let Some(circuit_breaker) = ft_manager.circuit_breakers.get_mut(&agent_id) {
+    |                                        ^^^^^^^^^^ second mutable borrow occurs here
+...
+439 |             if failure_info.failure_count >= circuit_breaker.failure_threshold {
+    |                -------------------------- first borrow later used here
+
+warning: unused variable: `from`
+   --> neural-doc-flow-coordination/messaging/mod.rs:473:36
+    |
+473 |     pub async fn find_route(&self, from: Uuid, to: Uuid) -> Result<AgentRoute, Box<dyn std::error::Error>> {
+    |                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_from`
+
+error[E0369]: binary operation `==` cannot be applied to type `&ResourceRequirement`
+   --> neural-doc-flow-coordination/resources.rs:258:37
+    |
+258 |                         if prev_req == req {
+    |                            -------- ^^ --- &ResourceRequirement
+    |                            |
+    |                            &ResourceRequirement
+    |
+note: an implementation of `PartialEq` might be missing for `ResourceRequirement`
+   --> neural-doc-flow-coordination/resources.rs:23:1
+    |
+23  | pub enum ResourceRequirement {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ must implement `PartialEq`
+help: consider annotating `ResourceRequirement` with `#[derive(PartialEq)]`
+    |
+23  + #[derive(PartialEq)]
+24  | pub enum ResourceRequirement {
+    |
+
+error[E0277]: `(dyn FnOnce(Message) + Send + 'static)` cannot be shared between threads safely
+  --> neural-doc-flow-coordination/messaging/protocols.rs:77:26
+   |
+77 | impl ProtocolHandler for RequestResponseProtocol {
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^ `(dyn FnOnce(Message) + Send + 'static)` cannot be shared between threads safely
+   |
+   = help: the trait `Sync` is not implemented for `(dyn FnOnce(Message) + Send + 'static)`
+   = note: required for `Unique<(dyn FnOnce(Message) + Send + 'static)>` to implement `Sync`
+note: required because it appears within the type `Box<(dyn FnOnce(Message) + Send + 'static)>`
+  --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/alloc/src/boxed.rs:231:12
+   = note: required because it appears within the type `(uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>)`
+   = note: required for `hashbrown::raw::RawTable<(uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>)>` to implement `Sync`
+note: required because it appears within the type `hashbrown::map::HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>, RandomState>`
+  --> /rust/deps/hashbrown-0.15.3/src/map.rs:185:12
+note: required because it appears within the type `HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>`
+  --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/std/src/collections/hash/map.rs:242:12
+   = note: required for `tokio::sync::RwLock<HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>>` to implement `Sync`
+   = note: 1 redundant requirement hidden
+   = note: required for `Arc<tokio::sync::RwLock<HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>>>` to implement `Sync`
+note: required because it appears within the type `RequestResponseProtocol`
+  --> neural-doc-flow-coordination/messaging/protocols.rs:27:12
+   |
+27 | pub struct RequestResponseProtocol {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `ProtocolHandler`
+  --> neural-doc-flow-coordination/messaging/protocols.rs:21:35
+   |
+21 | pub trait ProtocolHandler: Send + Sync {
+   |                                   ^^^^ required by this bound in `ProtocolHandler`
+
+error[E0277]: the trait bound `ValidationResult: _::_serde::Serialize` is not satisfied
+   --> neural-doc-flow-coordination/agents/validator.rs:255:52
+    |
+255 |                     content: serde_json::to_value(&validation_result)?,
+    |                              --------------------  ^^^^^^^^^^^^^^^^^ the trait `_::_serde::Serialize` is not implemented for `ValidationResult`
+    |                              |
+    |                              required by a bound introduced by this call
+    |
+    = note: for local types consider adding `#[derive(serde::Serialize)]` to your `ValidationResult` type
+    = note: for types from other crates check whether the crate offers a `serde` feature flag
+    = help: the following other types implement trait `_::_serde::Serialize`:
+              &'a T
+              &'a mut T
+              ()
+              (T,)
+              (T0, T1)
+              (T0, T1, T2)
+              (T0, T1, T2, T3)
+              (T0, T1, T2, T3, T4)
+            and 288 others
+    = note: required for `&ValidationResult` to implement `_::_serde::Serialize`
+note: required by a bound in `to_value`
+   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.140/src/value/mod.rs:990:8
+    |
+988 | pub fn to_value<T>(value: T) -> Result<Value, Error>
+    |        -------- required by a bound in this function
+989 | where
+990 |     T: Serialize,
+    |        ^^^^^^^^^ required by this bound in `to_value`
+
+error[E0599]: no variant or associated item named `Shutting_down` found for enum `base::AgentState` in the current scope
+   --> neural-doc-flow-coordination/agents/validator.rs:290:41
+    |
+290 |         self.base.set_state(AgentState::Shutting_down).await;
+    |                                         ^^^^^^^^^^^^^ variant or associated item not found in `AgentState`
+    |
+   ::: neural-doc-flow-coordination/agents/base.rs:60:1
+    |
+60  | pub enum AgentState {
+    | ------------------- variant or associated item `Shutting_down` not found for this enum
+    |
+help: there is a variant with a similar name
+    |
+290 -         self.base.set_state(AgentState::Shutting_down).await;
+290 +         self.base.set_state(AgentState::ShuttingDown).await;
+    |
+
+error[E0599]: no variant or associated item named `Shutting_down` found for enum `base::AgentState` in the current scope
+   --> neural-doc-flow-coordination/agents/validator.rs:308:49
+    |
+308 |                 self.base.set_state(AgentState::Shutting_down).await;
+    |                                                 ^^^^^^^^^^^^^ variant or associated item not found in `AgentState`
+    |
+   ::: neural-doc-flow-coordination/agents/base.rs:60:1
+    |
+60  | pub enum AgentState {
+    | ------------------- variant or associated item `Shutting_down` not found for this enum
+    |
+help: there is a variant with a similar name
+    |
+308 -                 self.base.set_state(AgentState::Shutting_down).await;
+308 +                 self.base.set_state(AgentState::ShuttingDown).await;
+    |
+
+error[E0277]: the trait bound `EnhancedContent: _::_serde::Serialize` is not satisfied
+   --> neural-doc-flow-coordination/agents/enhancer.rs:309:52
+    |
+309 |                     content: serde_json::to_value(&enhanced_content)?,
+    |                              --------------------  ^^^^^^^^^^^^^^^^ the trait `_::_serde::Serialize` is not implemented for `EnhancedContent`
+    |                              |
+    |                              required by a bound introduced by this call
+    |
+    = note: for local types consider adding `#[derive(serde::Serialize)]` to your `EnhancedContent` type
+    = note: for types from other crates check whether the crate offers a `serde` feature flag
+    = help: the following other types implement trait `_::_serde::Serialize`:
+              &'a T
+              &'a mut T
+              ()
+              (T,)
+              (T0, T1)
+              (T0, T1, T2)
+              (T0, T1, T2, T3)
+              (T0, T1, T2, T3, T4)
+            and 288 others
+    = note: required for `&EnhancedContent` to implement `_::_serde::Serialize`
+note: required by a bound in `to_value`
+   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.140/src/value/mod.rs:990:8
+    |
+988 | pub fn to_value<T>(value: T) -> Result<Value, Error>
+    |        -------- required by a bound in this function
+989 | where
+990 |     T: Serialize,
+    |        ^^^^^^^^^ required by this bound in `to_value`
+
+error[E0599]: no variant or associated item named `Shutting_down` found for enum `base::AgentState` in the current scope
+   --> neural-doc-flow-coordination/agents/enhancer.rs:343:41
+    |
+343 |         self.base.set_state(AgentState::Shutting_down).await;
+    |                                         ^^^^^^^^^^^^^ variant or associated item not found in `AgentState`
+    |
+   ::: neural-doc-flow-coordination/agents/base.rs:60:1
+    |
+60  | pub enum AgentState {
+    | ------------------- variant or associated item `Shutting_down` not found for this enum
+    |
+help: there is a variant with a similar name
+    |
+343 -         self.base.set_state(AgentState::Shutting_down).await;
+343 +         self.base.set_state(AgentState::ShuttingDown).await;
+    |
+
+error[E0599]: no variant or associated item named `Shutting_down` found for enum `base::AgentState` in the current scope
+   --> neural-doc-flow-coordination/agents/enhancer.rs:361:49
+    |
+361 |                 self.base.set_state(AgentState::Shutting_down).await;
+    |                                                 ^^^^^^^^^^^^^ variant or associated item not found in `AgentState`
+    |
+   ::: neural-doc-flow-coordination/agents/base.rs:60:1
+    |
+60  | pub enum AgentState {
+    | ------------------- variant or associated item `Shutting_down` not found for this enum
+    |
+help: there is a variant with a similar name
+    |
+361 -                 self.base.set_state(AgentState::Shutting_down).await;
+361 +                 self.base.set_state(AgentState::ShuttingDown).await;
+    |
+
+error[E0277]: the trait bound `FormattedContent: _::_serde::Serialize` is not satisfied
+   --> neural-doc-flow-coordination/agents/formatter.rs:362:52
+    |
+362 |                     content: serde_json::to_value(&formatted_content)?,
+    |                              --------------------  ^^^^^^^^^^^^^^^^^ the trait `_::_serde::Serialize` is not implemented for `FormattedContent`
+    |                              |
+    |                              required by a bound introduced by this call
+    |
+    = note: for local types consider adding `#[derive(serde::Serialize)]` to your `FormattedContent` type
+    = note: for types from other crates check whether the crate offers a `serde` feature flag
+    = help: the following other types implement trait `_::_serde::Serialize`:
+              &'a T
+              &'a mut T
+              ()
+              (T,)
+              (T0, T1)
+              (T0, T1, T2)
+              (T0, T1, T2, T3)
+              (T0, T1, T2, T3, T4)
+            and 288 others
+    = note: required for `&FormattedContent` to implement `_::_serde::Serialize`
+note: required by a bound in `to_value`
+   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.140/src/value/mod.rs:990:8
+    |
+988 | pub fn to_value<T>(value: T) -> Result<Value, Error>
+    |        -------- required by a bound in this function
+989 | where
+990 |     T: Serialize,
+    |        ^^^^^^^^^ required by this bound in `to_value`
+
+error[E0599]: no variant or associated item named `Shutting_down` found for enum `base::AgentState` in the current scope
+   --> neural-doc-flow-coordination/agents/formatter.rs:396:41
+    |
+396 |         self.base.set_state(AgentState::Shutting_down).await;
+    |                                         ^^^^^^^^^^^^^ variant or associated item not found in `AgentState`
+    |
+   ::: neural-doc-flow-coordination/agents/base.rs:60:1
+    |
+60  | pub enum AgentState {
+    | ------------------- variant or associated item `Shutting_down` not found for this enum
+    |
+help: there is a variant with a similar name
+    |
+396 -         self.base.set_state(AgentState::Shutting_down).await;
+396 +         self.base.set_state(AgentState::ShuttingDown).await;
+    |
+
+error[E0599]: no variant or associated item named `Shutting_down` found for enum `base::AgentState` in the current scope
+   --> neural-doc-flow-coordination/agents/formatter.rs:414:49
+    |
+414 |                 self.base.set_state(AgentState::Shutting_down).await;
+    |                                                 ^^^^^^^^^^^^^ variant or associated item not found in `AgentState`
+    |
+   ::: neural-doc-flow-coordination/agents/base.rs:60:1
+    |
+60  | pub enum AgentState {
+    | ------------------- variant or associated item `Shutting_down` not found for this enum
+    |
+help: there is a variant with a similar name
+    |
+414 -                 self.base.set_state(AgentState::Shutting_down).await;
+414 +                 self.base.set_state(AgentState::ShuttingDown).await;
+    |
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+  --> neural-doc-flow-coordination/agents/mod.rs:94:21
+   |
+94 |             agents: Arc::new(RwLock::new(std::collections::HashMap::new())),
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `agents::DaaAgent` is not dyn compatible
+   |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+  --> neural-doc-flow-coordination/agents/mod.rs:55:14
+   |
+49 | pub trait DaaAgent: Send + Sync {
+   |           -------- this trait is not dyn compatible...
+...
+55 |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56 |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+   |              ^^^^^^^ ...because method `process` is `async`
+57 |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58 |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^ ...because method `shutdown` is `async`
+   = help: consider moving `shutdown` to another trait
+   = help: consider moving `initialize` to another trait
+   = help: consider moving `process` to another trait
+   = help: consider moving `coordinate` to another trait
+   = help: the following types implement `agents::DaaAgent`:
+             agents::controller::ControllerAgent
+             agents::extractor::ExtractorAgent
+           consider defining an enum where each variant holds one of these types,
+           implementing `agents::DaaAgent` for this new enum and using it instead
+   = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+  --> neural-doc-flow-coordination/agents/mod.rs:94:30
+   |
+94 |             agents: Arc::new(RwLock::new(std::collections::HashMap::new())),
+   |                              ^^^^^^ `agents::DaaAgent` is not dyn compatible
+   |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+  --> neural-doc-flow-coordination/agents/mod.rs:55:14
+   |
+49 | pub trait DaaAgent: Send + Sync {
+   |           -------- this trait is not dyn compatible...
+...
+55 |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56 |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+   |              ^^^^^^^ ...because method `process` is `async`
+57 |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58 |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^ ...because method `shutdown` is `async`
+   = help: consider moving `shutdown` to another trait
+   = help: consider moving `initialize` to another trait
+   = help: consider moving `process` to another trait
+   = help: consider moving `coordinate` to another trait
+   = help: the following types implement `agents::DaaAgent`:
+             agents::controller::ControllerAgent
+             agents::extractor::ExtractorAgent
+           consider defining an enum where each variant holds one of these types,
+           implementing `agents::DaaAgent` for this new enum and using it instead
+   = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0038]: the trait `agents::DaaAgent` is not dyn compatible
+  --> neural-doc-flow-coordination/agents/mod.rs:94:21
+   |
+94 |             agents: Arc::new(RwLock::new(std::collections::HashMap::new())),
+   |                     ^^^ `agents::DaaAgent` is not dyn compatible
+   |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+  --> neural-doc-flow-coordination/agents/mod.rs:55:14
+   |
+49 | pub trait DaaAgent: Send + Sync {
+   |           -------- this trait is not dyn compatible...
+...
+55 |     async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `initialize` is `async`
+56 |     async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+   |              ^^^^^^^ ...because method `process` is `async`
+57 |     async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^^^ ...because method `coordinate` is `async`
+58 |     async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+   |              ^^^^^^^^ ...because method `shutdown` is `async`
+   = help: consider moving `shutdown` to another trait
+   = help: consider moving `initialize` to another trait
+   = help: consider moving `process` to another trait
+   = help: consider moving `coordinate` to another trait
+   = help: the following types implement `agents::DaaAgent`:
+             agents::controller::ControllerAgent
+             agents::extractor::ExtractorAgent
+           consider defining an enum where each variant holds one of these types,
+           implementing `agents::DaaAgent` for this new enum and using it instead
+   = note: `agents::DaaAgent` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0277]: `(dyn MessagePredicate + 'static)` doesn't implement `Debug`
+  --> neural-doc-flow-coordination/messaging/routing.rs:48:12
+   |
+39 | #[derive(Debug, Clone)]
+   |          ----- in this derive macro expansion
+...
+48 |     Custom(Arc<dyn MessagePredicate>),
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^ `(dyn MessagePredicate + 'static)` cannot be formatted using `{:?}` because it doesn't implement `Debug`
+   |
+   = help: the trait `Debug` is not implemented for `(dyn MessagePredicate + 'static)`
+   = help: the following other types implement trait `Debug`:
+             dyn Any + Send + Sync
+             dyn Any + Send
+             dyn Any
+             dyn tracing::Value
+
+error[E0277]: `(dyn FnOnce(Message) + Send + 'static)` cannot be shared between threads safely
+  --> neural-doc-flow-coordination/messaging/protocols.rs:78:81
+   |
+78 |       async fn handle_message(&self, message: Message) -> Result<Option<Message>> {
+   |  _________________________________________________________________________________^
+79 | |         // Check if this is a response to a pending request
+80 | |         if message.correlation_id.is_some() {
+81 | |             self.handle_response(message).await?;
+...  |
+87 | |     }
+   | |_____^ `(dyn FnOnce(Message) + Send + 'static)` cannot be shared between threads safely
+   |
+   = help: the trait `Sync` is not implemented for `(dyn FnOnce(Message) + Send + 'static)`
+   = note: required for `Unique<(dyn FnOnce(Message) + Send + 'static)>` to implement `Sync`
+note: required because it appears within the type `Box<(dyn FnOnce(Message) + Send + 'static)>`
+  --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/alloc/src/boxed.rs:231:12
+   = note: required because it appears within the type `(uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>)`
+   = note: required for `hashbrown::raw::RawTable<(uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>)>` to implement `Sync`
+note: required because it appears within the type `hashbrown::map::HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>, RandomState>`
+  --> /rust/deps/hashbrown-0.15.3/src/map.rs:185:12
+note: required because it appears within the type `HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>`
+  --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/std/src/collections/hash/map.rs:242:12
+   = note: required for `tokio::sync::RwLock<HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>>` to implement `Sync`
+   = note: 1 redundant requirement hidden
+   = note: required for `Arc<tokio::sync::RwLock<HashMap<uuid::Uuid, Box<(dyn FnOnce(Message) + Send + 'static)>>>>` to implement `Sync`
+note: required because it appears within the type `RequestResponseProtocol`
+  --> neural-doc-flow-coordination/messaging/protocols.rs:27:12
+   |
+27 | pub struct RequestResponseProtocol {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `&RequestResponseProtocol` to implement `Send`
+note: required because it's used within this `async` block
+  --> neural-doc-flow-coordination/messaging/protocols.rs:78:81
+   |
+78 |       async fn handle_message(&self, message: Message) -> Result<Option<Message>> {
+   |  _________________________________________________________________________________^
+79 | |         // Check if this is a response to a pending request
+80 | |         if message.correlation_id.is_some() {
+81 | |             self.handle_response(message).await?;
+...  |
+87 | |     }
+   | |_____^
+   = note: required for the cast from `Pin<Box<{async block@neural-doc-flow-coordination/messaging/protocols.rs:78:81: 87:6}>>` to `Pin<Box<dyn Future<Output = Result<Option<Message>, Error>> + Send>>`
+   = note: the full name for the type has been written to '/workspaces/doc-ingest/target/debug/deps/neural_doc_flow_coordination-33f0e523f5d3a6d0.long-type-5662316356360242193.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `GossipValue: _::_serde::Deserialize<'_>` is not satisfied
+    --> neural-doc-flow-coordination/messaging/protocols.rs:420:65
+     |
+420  |                     if let Ok(state) = serde_json::from_value::<std::collections::HashMap<String, GossipValue>>(remote_state.clone()) {
+     |                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `_::_serde::Deserialize<'_>` is not implemented for `GossipValue`
+     |
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `GossipValue` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `_::_serde::Deserialize<'de>`:
+               &'a Path
+               &'a [u8]
+               &'a str
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+             and 305 others
+     = note: required for `HashMap<std::string::String, GossipValue>` to implement `for<'de> _::_serde::Deserialize<'de>`
+     = note: required for `HashMap<std::string::String, GossipValue>` to implement `DeserializeOwned`
+note: required by a bound in `from_value`
+    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.140/src/value/mod.rs:1032:8
+     |
+1030 | pub fn from_value<T>(value: Value) -> Result<T, Error>
+     |        ---------- required by a bound in this function
+1031 | where
+1032 |     T: DeserializeOwned,
+     |        ^^^^^^^^^^^^^^^^ required by this bound in `from_value`
+
+warning: unused import: `Agent`
+  --> neural-doc-flow-coordination/fault_tolerance.rs:12:20
+   |
+12 |     agents::base::{Agent, AgentState},
+   |                    ^^^^^
+
+error: future cannot be sent between threads safely
+   --> neural-doc-flow-coordination/messaging/fault_tolerance.rs:390:17
+    |
+390 | /                 Box::pin(async move {
+391 | |                     bulkhead.execute(op).await
+392 | |                 })
+    | |__________________^ future created by async block is not `Send`
+    |
+note: future is not `Send` as this value is used across an await
+   --> neural-doc-flow-coordination/messaging/fault_tolerance.rs:290:35
+    |
+286 |         let result = operation.await;
+    |             ------ has type `Result<T, anyhow::Error>` which is not `Send`
+...
+290 |         *self.active_count.lock().await -= 1;
+    |                                   ^^^^^ await occurs here, with `result` maybe used later
+    = note: required for the cast from `Pin<Box<...>>` to `Pin<Box<dyn futures::Future<Output = Result<T, anyhow::Error>> + Send>>`
+    = note: the full name for the type has been written to '/workspaces/doc-ingest/target/debug/deps/neural_doc_flow_coordination-33f0e523f5d3a6d0.long-type-14244570059049336415.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+help: consider further restricting type parameter `T` with trait `Send`
+    |
+374 |         F: Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send>> + Send + Sync, T: std::marker::Send
+    |                                                                                                          ++++++++++++++++++++
+
+Some errors have detailed explanations: E0038, E0277, E0308, E0369, E0412, E0499, E0599.
+For more information about an error, try `rustc --explain E0038`.
+warning: `neural-doc-flow-coordination` (lib) generated 13 warnings
+error: could not compile `neural-doc-flow-coordination` (lib) due to 67 previous errors; 13 warnings emitted
+warning: build failed, waiting for other jobs to finish...

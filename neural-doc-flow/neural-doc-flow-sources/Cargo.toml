@@ -1,0 +1,43 @@
+[package]
+name = "neural-doc-flow-sources"
+version = "0.1.0"
+edition = "2021"
+description = "Document source plugins for Neural Document Flow"
+authors = ["Neural Doc Flow Team"]
+license = "MIT OR Apache-2.0"
+keywords = ["document", "processing", "plugins", "extraction", "rust"]
+categories = ["text-processing", "parsing"]
+
+[dependencies]
+# Core dependency
+
+# Re-export workspace dependencies
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+
+# PDF processing
+lopdf = { version = "0.32", optional = true }
+pdf-extract = { version = "0.7", optional = true }
+
+# Image processing
+image = { version = "0.24", optional = true }
+
+# HTTP client for URL sources
+reqwest = { version = "0.11", features = ["json"], optional = true }
+
+# Memory mapping for large files
+memmap2 = { version = "0.9", optional = true }
+
+[features]
+default = ["pdf"]
+pdf = ["lopdf", "pdf-extract", "memmap2"]
+images = ["image"]
+http = ["reqwest"]
+full = ["pdf", "images", "http"]

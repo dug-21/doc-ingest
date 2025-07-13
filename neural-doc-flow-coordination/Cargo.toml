@@ -1,0 +1,43 @@
+[package]
+name = "neural-doc-flow-coordination"
+version = "0.1.0"
+edition = "2021"
+authors = ["DAA Neural Coordinator"]
+description = "Distributed Agent Architecture coordination for neural document processing"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+regex = "1.0"
+futures = "0.3"
+
+# Coordination and messaging
+crossbeam = "0.8"
+parking_lot = "0.12"
+dashmap = "5.4"
+rayon = "1.7"
+
+# Core dependency
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+
+# Performance monitoring
+metrics = { version = "0.21", optional = true }
+
+# Additional dependencies for agents
+lru = "0.12"
+rand = "0.8"
+
+[features]
+default = []
+monitoring = ["metrics"]
+
+[lib]
+name = "neural_doc_flow_coordination"
+path = "lib.rs"

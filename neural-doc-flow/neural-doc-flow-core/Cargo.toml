@@ -1,0 +1,30 @@
+[package]
+name = "neural-doc-flow-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core traits and types for Neural Document Flow processing"
+authors = ["Neural Doc Flow Team"]
+license = "MIT OR Apache-2.0"
+keywords = ["document", "processing", "neural", "extraction", "rust"]
+categories = ["text-processing", "parsing", "science"]
+
+[dependencies]
+# Re-export workspace dependencies
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+
+# Additional core dependencies
+bytes = "1.0"
+mime = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+
+[features]
+default = []
+full = []

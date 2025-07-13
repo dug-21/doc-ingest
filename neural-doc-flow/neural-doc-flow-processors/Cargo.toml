@@ -1,0 +1,30 @@
+[package]
+name = "neural-doc-flow-processors"
+version = "0.1.0"
+edition = "2021"
+description = "Processing pipeline implementations for Neural Document Flow"
+authors = ["Neural Doc Flow Team"]
+license = "MIT OR Apache-2.0"
+keywords = ["document", "processing", "neural", "pipeline", "rust"]
+categories = ["text-processing", "science"]
+
+[dependencies]
+# Core dependency
+
+# Re-export workspace dependencies
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+
+# Additional dependencies for processing
+futures = "0.3"
+
+[features]
+default = []
+full = []

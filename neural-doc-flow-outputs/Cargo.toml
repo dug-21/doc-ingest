@@ -1,0 +1,66 @@
+[package]
+name = "neural-doc-flow-outputs"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+description = "Output formatters for neural document flow system"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Core dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+
+# Core async and error handling
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Logging and tracing
+tracing = { workspace = true }
+
+# Async traits and utilities
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Text processing
+regex = { workspace = true }
+
+# Markdown generation
+pulldown-cmark = { version = "0.9", optional = true }
+
+# HTML generation
+tera = { version = "1.19", optional = true }
+
+# PDF generation
+printpdf = { version = "0.5", optional = true }
+
+# XML generation
+quick-xml = { version = "0.31", optional = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+tempfile = { workspace = true }
+pretty_assertions = { workspace = true }
+
+[features]
+default = ["json", "markdown", "html"]
+json = []
+markdown = ["pulldown-cmark"]
+html = ["tera"]
+pdf = ["printpdf"]
+xml = ["quick-xml"]
+
+[lib]
+name = "neural_doc_flow_outputs"
+path = "src/lib.rs"

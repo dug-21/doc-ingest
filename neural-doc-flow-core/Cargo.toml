@@ -1,0 +1,79 @@
+[package]
+name = "neural-doc-flow-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+description = "Core processing engine for neural document flow system"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Core async and error handling
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Logging and tracing
+tracing = { workspace = true }
+
+# Async traits and utilities
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Concurrency
+rayon = { workspace = true, optional = true }
+crossbeam = { workspace = true, optional = true }
+parking_lot = { workspace = true, optional = true }
+
+# Metrics and monitoring
+metrics = { workspace = true, optional = true }
+opentelemetry = { workspace = true, optional = true }
+
+# Text processing basics
+regex = { workspace = true }
+unicode-normalization = { workspace = true }
+
+# Memory and performance
+ndarray = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+tempfile = { workspace = true }
+test-log = { workspace = true }
+pretty_assertions = { workspace = true }
+tokio-test = "0.4"
+
+[features]
+default = ["performance"]
+
+# Performance optimizations
+performance = ["rayon", "crossbeam", "parking_lot"]
+
+# Monitoring and metrics
+monitoring = ["metrics", "opentelemetry"]
+
+# SIMD and mathematical operations
+simd = ["ndarray"]
+
+# Neural processing support
+neural = ["simd"]
+
+# Benchmarks temporarily disabled until bench files are created
+# [[bench]]
+# name = "core_processing"
+# harness = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
