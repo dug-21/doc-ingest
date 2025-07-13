@@ -1,0 +1,65 @@
+[package]
+name = "neural-doc-flow-sources"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+description = "Document source plugins for neural document flow system"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Core dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+
+# Core async and error handling
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Logging and tracing
+tracing = { workspace = true }
+
+# Async traits and utilities
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Text processing
+regex = { workspace = true }
+
+# HTTP client for web sources
+reqwest = { version = "0.11", features = ["json", "stream"], optional = true }
+
+# HTML parsing
+scraper = { version = "0.17", optional = true }
+
+# PDF processing
+pdf-extract = { version = "0.7", optional = true }
+lopdf = "0.26"
+
+[dev-dependencies]
+criterion = { workspace = true }
+tempfile = { workspace = true }
+tokio-test = "0.4"
+
+[features]
+default = ["pdf", "web", "html", "markdown"]
+pdf = ["pdf-extract"]
+web = ["reqwest"]
+html = ["scraper"]
+markdown = []
+docx = []
+text = []
+
+[lib]
+name = "neural_doc_flow_sources"
+path = "src/lib.rs"
