@@ -77,6 +77,24 @@ pub enum ProcessingError {
 
     #[error("Processing interrupted: {reason}")]
     Interrupted { reason: String },
+
+    #[error("Plugin not found: {0}")]
+    PluginNotFound(String),
+
+    #[error("Plugin load error: {0}")]
+    PluginLoadError(String),
+
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Regex error: {0}")]
+    Regex(String),
+
+    #[error("Aho-Corasick build error: {0}")]
+    AhoCorasick(String),
+
+    #[error("Sandbox error: {0}")]
+    SandboxError(String),
 }
 
 /// Neural processing specific errors
@@ -129,3 +147,38 @@ pub type SourceResult<T> = std::result::Result<T, SourceError>;
 pub type ProcessingResult<T> = std::result::Result<T, ProcessingError>;
 pub type NeuralResult<T> = std::result::Result<T, NeuralError>;
 pub type OutputResult<T> = std::result::Result<T, OutputError>;
+
+// Error conversion implementations for security module compatibility
+impl From<regex::Error> for ProcessingError {
+    fn from(err: regex::Error) -> Self {
+        ProcessingError::Regex(err.to_string())
+    }
+}
+
+impl From<aho_corasick::BuildError> for ProcessingError {
+    fn from(err: aho_corasick::BuildError) -> Self {
+        ProcessingError::AhoCorasick(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for ProcessingError {
+    fn from(err: serde_json::Error) -> Self {
+        ProcessingError::ProcessorFailed {
+            processor_name: "serialization".to_string(),
+            reason: err.to_string(),
+        }
+    }
+}
+
+#[cfg(feature = "sandbox")]
+impl From<nix::errno::Errno> for ProcessingError {
+    fn from(err: nix::errno::Errno) -> Self {
+        ProcessingError::ProcessorFailed {
+            processor_name: "sandbox".to_string(),
+            reason: err.to_string(),
+        }
+    }
+}
+
+// Note: notify::Error conversion is implemented in the plugins module
+

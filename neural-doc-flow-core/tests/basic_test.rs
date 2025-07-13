@@ -1,6 +1,6 @@
 //! Basic test to verify the library compiles and types are accessible
 
-use neural_doc_flow_core::prelude::*;
+// Note: prelude module will be used when more types are added to it
 
 #[test]
 fn test_library_compiles() {

@@ -1,0 +1,61 @@
+[package]
+name = "neural-doc-flow-security"
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Security features for neural document flow including threat detection"
+
+[dependencies]
+# Core dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+neural-doc-flow-processors = { path = "../neural-doc-flow-processors" }
+
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Neural processing for threat detection
+ruv-fann = { version = "0.1.6" }
+
+# Security features
+sha2 = "0.10"
+blake3 = "1.5"
+ring = "0.17"
+
+# Sandboxing and isolation
+nix = { workspace = true }
+chrono = { workspace = true }
+caps = "0.5"
+
+# Pattern matching and analysis
+regex = { workspace = true }
+aho-corasick = "1.1"
+
+# Logging
+tracing = { workspace = true }
+
+# Concurrency
+crossbeam = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+criterion = { workspace = true }
+
+[features]
+default = ["simd"]
+simd = []

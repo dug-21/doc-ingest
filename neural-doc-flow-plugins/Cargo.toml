@@ -1,0 +1,47 @@
+[package]
+name = "neural-doc-flow-plugins"
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Plugin system with hot-reload support for neural document flow"
+
+[dependencies]
+# Core dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+neural-doc-flow-security = { path = "../neural-doc-flow-security" }
+
+# Async runtime
+tokio = { workspace = true, features = ["full", "fs"] }
+async-trait = { workspace = true }
+
+# Dynamic loading
+libloading = "0.8"
+dlopen2 = "0.7"
+
+# File watching for hot-reload
+notify = "6.1"
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = "0.8"
+
+# Logging
+tracing = { workspace = true }
+
+# Concurrency
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

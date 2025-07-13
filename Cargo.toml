@@ -13,7 +13,7 @@ members = [
     "neural-doc-flow-sources",
     "neural-doc-flow-outputs",
     "neural-doc-flow"
-]
+, "neural-doc-flow-security", "neural-doc-flow-plugins"]
 
 [workspace.package]
 edition = "2021"
@@ -60,6 +60,7 @@ prometheus = { version = "0.13" }
 # Text processing
 regex = "1.0"
 unicode-normalization = "0.1"
+aho-corasick = "1.0"
 
 # Memory and performance
 ndarray = { version = "0.15" }
@@ -73,6 +74,9 @@ pretty_assertions = "1.4"
 
 # SIMD dependencies
 wide = "0.7"
+
+# Unix/Linux system utilities
+nix = { version = "0.27", features = ["process", "signal", "user", "resource"] }
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
