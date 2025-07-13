@@ -3,12 +3,15 @@
 //! This module provides additional utilities for working with documents,
 //! extending the core Document type defined in types.rs
 
-use crate::types::{Document, DocumentMetadata, DocumentContent, ProcessingEvent,
+use crate::types::{DocumentMetadata, DocumentContent, ProcessingEvent,
                   DocumentType, DocumentSourceType, DocumentStructure};
 use crate::error::{Result, NeuralDocFlowError};
 use std::path::Path;
 use uuid::Uuid;
 use chrono::Utc;
+
+// Re-export Document from types for convenience
+pub use crate::types::Document;
 
 /// Document builder for convenient document creation
 #[derive(Debug, Default)]
@@ -71,6 +74,7 @@ impl DocumentBuilder {
         self.metadata.custom.insert(key.into(), value);
         self
     }
+    
     
     /// Build the document
     pub fn build(self) -> Document {

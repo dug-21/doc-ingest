@@ -11,6 +11,7 @@ pub mod neural;
 pub mod document;
 pub mod result;
 pub mod config;
+pub mod engine;
 
 // Re-export specific items to avoid conflicts
 pub use traits::{DocumentSource, DocumentSourceFactory, ProcessorPipeline, Processor, 

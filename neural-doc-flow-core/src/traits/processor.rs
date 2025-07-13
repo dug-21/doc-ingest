@@ -249,6 +249,7 @@ pub struct RetryConfig {
 
 /// Builder for creating processing pipelines
 pub struct PipelineBuilder {
+    #[allow(dead_code)] // Used in future implementations
     pub(crate) name: String,
     pub(crate) processors: Vec<Box<dyn Processor>>,
     pub(crate) config: HashMap<String, serde_json::Value>,

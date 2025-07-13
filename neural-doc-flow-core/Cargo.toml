@@ -42,9 +42,13 @@ opentelemetry = { workspace = true, optional = true }
 # Text processing basics
 regex = { workspace = true }
 unicode-normalization = { workspace = true }
+aho-corasick = { workspace = true }
 
 # Memory and performance
 ndarray = { workspace = true, optional = true }
+
+# Unix/Linux system utilities (for sandboxing, optional)
+nix = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
@@ -68,6 +72,9 @@ simd = ["ndarray"]
 
 # Neural processing support
 neural = ["simd"]
+
+# Sandbox support (Unix/Linux only)
+sandbox = ["nix"]
 
 # Benchmarks temporarily disabled until bench files are created
 # [[bench]]
