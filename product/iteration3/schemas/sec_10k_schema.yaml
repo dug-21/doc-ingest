@@ -1,0 +1,254 @@
+# SEC Form 10-K Extraction Schema
+# No hardcoded SEC logic - just requirements
+
+document_profile:
+  name: "SEC Form 10-K"
+  description: "Annual report for US public companies"
+  
+  identification:
+    patterns:
+      - type: "content"
+        keywords: ["FORM 10-K", "ANNUAL REPORT", "SECURITIES AND EXCHANGE COMMISSION"]
+      - type: "filename"
+        regex: "10[kq]|10-[kq]"
+      - type: "metadata"
+        fields:
+          form_type: "10-K"
+  
+  structure:
+    hierarchical: true
+    sections:
+      - name: "Business"
+        required: true
+        patterns: ["Item 1\\.", "ITEM 1\\.", "Business Overview"]
+        subsections:
+          - name: "Risk Factors"
+            patterns: ["Item 1A", "ITEM 1A", "Risk Factors"]
+      
+      - name: "Management Discussion"
+        required: true
+        patterns: ["Item 7\\.", "ITEM 7\\.", "MD&A", "Management's Discussion"]
+      
+      - name: "Financial Statements"
+        required: true
+        patterns: ["Item 8\\.", "ITEM 8\\.", "Financial Statements and Supplementary Data"]
+    
+    tables:
+      expected: true
+      types:
+        - name: "income_statement"
+          identifiers: ["Income Statement", "Statement of Operations", "Statement of Earnings"]
+          structure_hints:
+            - rows_are_items: true
+            - columns_are_periods: true
+            - currency_columns: true
+        
+        - name: "balance_sheet"
+          identifiers: ["Balance Sheet", "Statement of Financial Position"]
+          structure_hints:
+            - assets_section: "Assets"
+            - liabilities_section: "Liabilities"
+            - equity_section: "Equity"
+        
+        - name: "cash_flow"
+          identifiers: ["Cash Flow", "Statement of Cash Flows"]
+          structure_hints:
+            - operating_section: true
+            - investing_section: true
+            - financing_section: true
+
+output:
+  format: "json"
+  
+  fields:
+    - name: "company_name"
+      type: "text"
+      required: true
+      extraction:
+        method: "direct"
+        source: "header|cover_page"
+        patterns:
+          - "^([A-Z][A-Z0-9\\s&,\\.]+)(?=\\s+FORM 10-K)"
+          - "Exact name of registrant[:\\s]+(.+?)(?=\\s*$)"
+        validation:
+          - rule: "not_empty"
+          - rule: "max_length"
+            value: 200
+    
+    - name: "fiscal_year_end"
+      type: "date"
+      required: true
+      extraction:
+        method: "pattern"
+        source: "cover_page|header"
+        patterns:
+          - "Fiscal [Yy]ear [Ee]nded[:\\s]+([A-Za-z]+ \\d{1,2}, \\d{4})"
+          - "For the year ended[:\\s]+([A-Za-z]+ \\d{1,2}, \\d{4})"
+        date_format: "auto"
+    
+    - name: "cik"
+      type: "text"
+      required: true
+      extraction:
+        method: "pattern"
+        source: "header|metadata"
+        patterns:
+          - "CIK[:\\s]+([0-9]{10})"
+          - "Central Index Key[:\\s]+([0-9]{10})"
+        validation:
+          - rule: "regex"
+            pattern: "^[0-9]{10}$"
+    
+    - name: "risk_factors"
+      type: "list"
+      required: true
+      extraction:
+        method: "semantic"
+        source: "Risk Factors"
+        processing: "hierarchical"
+        queries:
+          - "What are the main risk factors?"
+          - "Extract each risk with its description"
+        structure:
+          - title: "risk headline"
+          - description: "risk details"
+          - category: "risk type"
+    
+    - name: "business_description"
+      type: "text"
+      required: true
+      extraction:
+        method: "section"
+        source: "Business"
+        max_length: 5000
+        summarize: true
+        key_points:
+          - "What does the company do?"
+          - "Main products and services"
+          - "Target markets"
+    
+    - name: "revenue"
+      type: "number"
+      required: true
+      extraction:
+        method: "table"
+        source: "income_statement"
+        cell_search:
+          - "Total Revenue"
+          - "Net Revenue"
+          - "Total Revenues"
+          - "Net Sales"
+        period: "most_recent_year"
+        unit: "detect"  # Auto-detect millions/thousands
+    
+    - name: "net_income"
+      type: "number"
+      required: true
+      extraction:
+        method: "table"
+        source: "income_statement"
+        cell_search:
+          - "Net Income"
+          - "Net Earnings"
+          - "Net Income (Loss)"
+        period: "most_recent_year"
+        unit: "detect"
+    
+    - name: "total_assets"
+      type: "number"
+      required: true
+      extraction:
+        method: "table"
+        source: "balance_sheet"
+        cell_search:
+          - "Total Assets"
+          - "Total Current Assets"
+        period: "most_recent"
+        unit: "detect"
+    
+    - name: "financial_tables"
+      type: "complex"
+      required: true
+      extraction:
+        method: "multi_table"
+        sources: ["income_statement", "balance_sheet", "cash_flow"]
+        preserve_structure: true
+        normalize_headers: true
+        extract_periods: true
+    
+    - name: "md_and_a_summary"
+      type: "text"
+      required: false
+      extraction:
+        method: "semantic"
+        source: "Management Discussion"
+        queries:
+          - "What are the key financial highlights?"
+          - "What are the main business trends?"
+          - "What is management's outlook?"
+        max_length: 3000
+
+quality:
+  min_confidence: 0.9
+  
+  validation_rules:
+    - type: "financial_consistency"
+      rules:
+        - description: "Revenue in income statement should match MD&A discussion"
+          cross_reference:
+            - field: "revenue"
+              source: "income_statement"
+            - field: "md_and_a_summary"
+              contains: "revenue|sales"
+        
+        - description: "Total assets should equal liabilities plus equity"
+          calculation: "total_assets == total_liabilities + total_equity"
+          tolerance: 0.01
+    
+    - type: "completeness"
+      required_sections:
+        - "Business"
+        - "Risk Factors"
+        - "Financial Statements"
+      threshold: 0.95
+    
+    - type: "data_quality"
+      rules:
+        - field: "fiscal_year_end"
+          must_be: "valid_date"
+          range: "within_last_2_years"
+        - field: "revenue"
+          must_be: "positive_number"
+        - field: "cik"
+          must_be: "10_digit_number"
+
+# Model hints - suggestions, not requirements
+model_hints:
+  layout_detection:
+    preferred_architectures: ["layoutlmv3", "dit", "donut"]
+    capabilities_needed:
+      - "hierarchical_structure"
+      - "section_detection"
+      - "header_identification"
+  
+  table_extraction:
+    preferred_models: ["table-transformer", "tapas", "deplot"]
+    capabilities_needed:
+      - "financial_tables"
+      - "multi_column"
+      - "numeric_extraction"
+  
+  text_extraction:
+    ocr_likely_needed: false
+    preferred_models: ["sec-bert", "finbert", "roberta-base"]
+    capabilities_needed:
+      - "financial_language"
+      - "long_context"
+  
+  entity_recognition:
+    preferred_models: ["bert-base-ner", "spacy-transformers"]
+    entity_types:
+      - "organization"
+      - "money"
+      - "date"
+      - "percent"

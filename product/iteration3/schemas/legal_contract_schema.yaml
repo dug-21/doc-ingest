@@ -1,0 +1,331 @@
+# Legal Contract Extraction Schema
+# Domain-agnostic contract processing
+
+document_profile:
+  name: "Legal Contract"
+  description: "Generic legal agreement extraction"
+  
+  identification:
+    patterns:
+      - type: "content"
+        keywords: ["AGREEMENT", "CONTRACT", "WHEREAS", "NOW THEREFORE", "WITNESSETH"]
+      - type: "structure"
+        features: 
+          - "numbered_sections"
+          - "legal_language"
+          - "signature_block"
+          - "dated_document"
+      - type: "linguistic"
+        indicators:
+          - "shall_frequency > 0.01"
+          - "party_references"
+          - "legal_terminology"
+  
+  structure:
+    hierarchical: true
+    typical_order:
+      - "title"
+      - "parties"
+      - "recitals"
+      - "definitions"
+      - "terms"
+      - "signatures"
+    
+    sections:
+      - name: "Title"
+        required: true
+        patterns: 
+          - "^[A-Z\\s]+AGREEMENT"
+          - "^[A-Z\\s]+CONTRACT"
+          - "^(\\w+\\s)+AGREEMENT"
+        location: "first_page_top"
+      
+      - name: "Parties"
+        required: true
+        patterns: 
+          - "PARTIES"
+          - "BETWEEN:?"
+          - "This .+ is entered into"
+          - "by and between"
+        extraction_hints:
+          - "Usually contains 'Party of the First Part' or similar"
+          - "May use 'hereinafter' for short names"
+      
+      - name: "Recitals"
+        required: false
+        patterns:
+          - "WHEREAS"
+          - "RECITALS"
+          - "BACKGROUND"
+        characteristics:
+          - "Multiple WHEREAS clauses"
+          - "Provides context"
+      
+      - name: "Definitions"
+        required: false
+        patterns:
+          - "DEFINITIONS"
+          - "DEFINED TERMS"
+          - "Section 1\\."
+          - "The following terms"
+      
+      - name: "Terms"
+        required: true
+        patterns:
+          - "TERMS AND CONDITIONS"
+          - "AGREEMENT"
+          - "COVENANTS"
+          - "The parties agree"
+        subsection_patterns:
+          - "\\d+\\.\\d+"  # Numbered sections
+          - "Article [IVX]+"
+          - "Section \\d+"
+      
+      - name: "Signatures"
+        required: true
+        patterns:
+          - "IN WITNESS WHEREOF"
+          - "SIGNATURES?"
+          - "EXECUTED"
+          - "By:____"
+        location: "last_pages"
+    
+    tables:
+      expected: false
+      possible_types:
+        - name: "schedules"
+          location: "appendix"
+        - name: "exhibits"
+          location: "appendix"
+        - name: "pricing_tables"
+          identifiers: ["Price", "Cost", "Fee Schedule"]
+
+output:
+  format: "json"
+  privacy_mode: "standard"  # Redact sensitive info if requested
+  
+  fields:
+    - name: "contract_type"
+      type: "text"
+      required: true
+      extraction:
+        method: "classification"
+        source: "full_document"
+        model_hint: "legal-bert-contracts"
+        classes:
+          - "service_agreement"
+          - "employment_contract"
+          - "nda"
+          - "purchase_agreement"
+          - "lease_agreement"
+          - "licensing_agreement"
+          - "partnership_agreement"
+          - "other"
+    
+    - name: "contract_title"
+      type: "text"
+      required: true
+      extraction:
+        method: "direct"
+        source: "Title"
+        cleaning:
+          - "remove_excessive_spaces"
+          - "normalize_case"
+    
+    - name: "parties"
+      type: "complex"
+      required: true
+      extraction:
+        method: "structured_ner"
+        source: "Parties"
+        structure:
+          - party_number: "ordinal"
+          - party_type: "enum[individual, corporation, llc, partnership, other]"
+          - full_name: "text"
+          - short_name: "text"  # e.g., "hereinafter 'Company'"
+          - address: "address"
+          - role: "enum[buyer, seller, employer, employee, licensor, licensee, landlord, tenant, service_provider, client, other]"
+        validation:
+          - "at_least_two_parties"
+          - "unique_short_names"
+    
+    - name: "effective_date"
+      type: "date"
+      required: true
+      extraction:
+        method: "pattern"
+        sources: ["Title", "Parties", "first_page"]
+        patterns:
+          - "Effective Date:?\\s*([A-Za-z]+ \\d{1,2}, \\d{4})"
+          - "dated as of ([A-Za-z]+ \\d{1,2}, \\d{4})"
+          - "on this (\\d{1,2})(?:st|nd|rd|th) day of ([A-Za-z]+),? (\\d{4})"
+          - "Date:?\\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{4})"
+        date_parsing: "intelligent"  # Handle multiple formats
+    
+    - name: "term_duration"
+      type: "complex"
+      required: false
+      extraction:
+        method: "semantic"
+        source: "Terms"
+        queries:
+          - "What is the duration or term of this agreement?"
+          - "When does this agreement expire?"
+          - "Is this agreement perpetual or time-limited?"
+        structure:
+          - duration_type: "enum[fixed, perpetual, renewable, contingent]"
+          - duration_value: "number"
+          - duration_unit: "enum[days, months, years]"
+          - start_date: "date"
+          - end_date: "date"
+          - renewal_terms: "text"
+    
+    - name: "key_obligations"
+      type: "list"
+      required: true
+      extraction:
+        method: "semantic_chunking"
+        source: "Terms"
+        chunk_by: "party"
+        queries:
+          - "What must {party} do under this agreement?"
+          - "What are {party}'s obligations?"
+          - "What services/deliverables must {party} provide?"
+        structure:
+          - party: "party_reference"
+          - obligation: "text"
+          - deadline: "date|text"
+          - conditions: "text"
+    
+    - name: "payment_terms"
+      type: "complex"
+      required: false
+      extraction:
+        method: "focused_extraction"
+        keywords: ["payment", "compensation", "fee", "price", "cost", "invoice", "remuneration"]
+        structure:
+          - payment_amount: "money"
+          - payment_schedule: "text"
+          - payment_method: "text"
+          - late_payment_terms: "text"
+          - currency: "currency_code"
+    
+    - name: "termination_provisions"
+      type: "complex"
+      required: true
+      extraction:
+        method: "section_extraction"
+        keywords: ["termination", "expiration", "breach", "default", "end", "cancel"]
+        structure:
+          - termination_events: "list[text]"
+          - notice_period: "duration"
+          - termination_penalties: "text"
+          - post_termination_obligations: "list[text]"
+    
+    - name: "confidentiality_clause"
+      type: "complex"
+      required: false
+      extraction:
+        method: "clause_detection"
+        keywords: ["confidential", "proprietary", "non-disclosure", "secret"]
+        structure:
+          - has_confidentiality: "boolean"
+          - confidential_information_definition: "text"
+          - duration: "text"
+          - exceptions: "list[text]"
+    
+    - name: "dispute_resolution"
+      type: "complex"
+      required: false
+      extraction:
+        method: "clause_detection"
+        keywords: ["dispute", "arbitration", "mediation", "jurisdiction", "governing law"]
+        structure:
+          - governing_law: "text"
+          - jurisdiction: "text"
+          - dispute_mechanism: "enum[litigation, arbitration, mediation, negotiation]"
+          - arbitration_rules: "text"
+    
+    - name: "signatures"
+      type: "list"
+      required: true
+      extraction:
+        method: "signature_extraction"
+        source: "Signatures"
+        structure:
+          - signatory_name: "text"
+          - signatory_title: "text"
+          - party_represented: "party_reference"
+          - signature_date: "date"
+          - witness: "text"
+        validation:
+          - "match_to_parties"
+          - "check_authority"
+    
+    - name: "defined_terms"
+      type: "dictionary"
+      required: false
+      extraction:
+        method: "definition_extraction"
+        source: "Definitions"
+        patterns:
+          - '"([^"]+)" means'
+          - '"([^"]+)" shall mean'
+          - '\\*\\*([^\\*]+)\\*\\* means'
+        structure:
+          term: "definition"
+
+quality:
+  min_confidence: 0.95
+  
+  validation_rules:
+    - type: "party_consistency"
+      rules:
+        - "All parties mentioned in Terms must be defined in Parties section"
+        - "Party short names must be used consistently"
+        - "Signature block must match defined parties"
+    
+    - type: "date_consistency"
+      rules:
+        - "Signature dates should not precede effective date"
+        - "All dates must be valid calendar dates"
+        - "Term end date must be after start date"
+    
+    - type: "legal_completeness"
+      required_elements:
+        - "At least two parties"
+        - "Consideration (payment or exchange)"
+        - "Signatures from all parties"
+        - "Governing law clause"
+    
+    - type: "reference_validation"
+      rules:
+        - "Section references must exist"
+        - "Defined terms must be used after definition"
+        - "Exhibit/Schedule references must match attachments"
+
+model_hints:
+  classification:
+    preferred_models: ["legal-bert", "casehold-bert", "contract-understanding-bert"]
+    fine_tuning_recommended: true
+    
+  ner:
+    preferred_models: ["legal-ner", "blackstone-ner", "spacy-legal"]
+    entity_types:
+      - "party"
+      - "date"
+      - "money"
+      - "jurisdiction"
+      - "legal_reference"
+  
+  semantic_understanding:
+    preferred_models: ["legal-bert-base", "saul-bert", "legal-roberta"]
+    context_window: "long"  # Legal documents are verbose
+  
+  signature_detection:
+    visual_models_needed: true
+    preferred_models: ["layoutlmv3", "donut"]
+    capabilities:
+      - "signature_presence"
+      - "signature_location"
+      - "text_extraction_near_signature"

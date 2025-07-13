@@ -1,0 +1,422 @@
+# Medical Record Extraction Schema
+# HIPAA-compliant, privacy-preserving extraction
+
+document_profile:
+  name: "Medical Record"
+  description: "Patient medical record with strict privacy preservation"
+  
+  identification:
+    patterns:
+      - type: "content"
+        keywords: ["PATIENT", "MEDICAL RECORD", "CLINICAL", "DIAGNOSIS", "TREATMENT"]
+      - type: "structure"
+        features:
+          - "patient_identifiers"
+          - "clinical_sections"
+          - "medical_terminology"
+          - "date_stamps"
+      - type: "format"
+        common_types:
+          - "discharge_summary"
+          - "clinical_note"
+          - "lab_report"
+          - "radiology_report"
+          - "consultation_note"
+  
+  privacy_requirements:
+    compliance: "HIPAA"
+    phi_elements:
+      - "names"
+      - "geographic_identifiers"
+      - "dates_except_year"
+      - "phone_numbers"
+      - "email_addresses"
+      - "ssn"
+      - "medical_record_numbers"
+      - "account_numbers"
+      - "certificate_numbers"
+      - "vehicle_identifiers"
+      - "device_identifiers"
+      - "urls"
+      - "ip_addresses"
+      - "biometric_identifiers"
+      - "photos"
+      - "unique_identifiers"
+    
+  structure:
+    hierarchical: true
+    sections:
+      - name: "Patient Demographics"
+        required: true
+        patterns:
+          - "Patient Information"
+          - "Demographics"
+          - "PATIENT:"
+          - "Name:"
+        phi_density: "high"
+      
+      - name: "Visit Information"
+        required: true
+        patterns:
+          - "Visit Date"
+          - "Admission Date"
+          - "Date of Service"
+          - "Encounter Date"
+      
+      - name: "Chief Complaint"
+        required: false
+        patterns:
+          - "Chief Complaint"
+          - "CC:"
+          - "Reason for Visit"
+          - "Presenting Problem"
+      
+      - name: "History of Present Illness"
+        required: true
+        patterns:
+          - "History of Present Illness"
+          - "HPI:"
+          - "Present Illness"
+        common_abbreviation: "HPI"
+      
+      - name: "Past Medical History"
+        required: false
+        patterns:
+          - "Past Medical History"
+          - "PMH:"
+          - "Medical History"
+          - "Previous Medical"
+      
+      - name: "Medications"
+        required: true
+        patterns:
+          - "Medications"
+          - "Current Medications"
+          - "MEDS:"
+          - "Prescription"
+        structured_data: true
+      
+      - name: "Allergies"
+        required: true
+        patterns:
+          - "Allergies"
+          - "Allergic to"
+          - "NKDA"
+          - "Allergy List"
+      
+      - name: "Physical Examination"
+        required: false
+        patterns:
+          - "Physical Exam"
+          - "PE:"
+          - "Examination"
+          - "On Examination"
+        subsections:
+          - "Vital Signs"
+          - "General"
+          - "HEENT"
+          - "Cardiovascular"
+          - "Respiratory"
+          - "Abdomen"
+          - "Extremities"
+          - "Neurological"
+      
+      - name: "Diagnostic Results"
+        required: false
+        patterns:
+          - "Lab Results"
+          - "Laboratory"
+          - "Diagnostic"
+          - "Test Results"
+        contains_structured_data: true
+      
+      - name: "Assessment and Plan"
+        required: true
+        patterns:
+          - "Assessment"
+          - "A/P:"
+          - "Assessment and Plan"
+          - "Clinical Impression"
+          - "Diagnosis"
+      
+      - name: "Provider Information"
+        required: true
+        patterns:
+          - "Provider"
+          - "Physician"
+          - "Attending"
+          - "Signed by"
+
+output:
+  format: "json"
+  privacy_mode: "strict"
+  deidentification: "required"
+  
+  fields:
+    - name: "record_id"
+      type: "text"
+      required: true
+      extraction:
+        method: "generate"
+        generator: "uuid"
+        description: "Anonymous identifier for this record"
+    
+    - name: "document_type"
+      type: "text"
+      required: true
+      extraction:
+        method: "classification"
+        classes:
+          - "discharge_summary"
+          - "progress_note"
+          - "consultation"
+          - "operative_report"
+          - "lab_report"
+          - "radiology_report"
+          - "other"
+    
+    - name: "visit_date"
+      type: "date"
+      required: true
+      privacy: "year_only"
+      extraction:
+        method: "pattern"
+        source: "Visit Information"
+        patterns:
+          - "Date:?\\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{4})"
+          - "Visit Date:?\\s*([A-Za-z]+ [0-9]{1,2}, [0-9]{4})"
+        transformation: "extract_year_only"
+    
+    - name: "age_group"
+      type: "text"
+      required: true
+      extraction:
+        method: "derived"
+        source: "Patient Demographics"
+        derive_from: "age_or_dob"
+        categories:
+          - "0-17"
+          - "18-44"
+          - "45-64"
+          - "65-89"
+          - "90+"
+    
+    - name: "gender"
+      type: "text"
+      required: false
+      extraction:
+        method: "pattern"
+        source: "Patient Demographics"
+        patterns:
+          - "Sex:?\\s*(M|F|Male|Female)"
+          - "Gender:?\\s*(M|F|Male|Female)"
+        normalize: true
+    
+    - name: "chief_complaint"
+      type: "text"
+      required: false
+      extraction:
+        method: "section"
+        source: "Chief Complaint"
+        max_length: 500
+        phi_scrub: true
+    
+    - name: "diagnoses"
+      type: "list"
+      required: true
+      extraction:
+        method: "medical_ner"
+        source: "Assessment and Plan"
+        model_hint: "biobert-disease"
+        include_codes: true
+        code_systems:
+          - "ICD-10"
+          - "SNOMED-CT"
+        structure:
+          - condition: "text"
+          - code: "medical_code"
+          - type: "enum[primary, secondary, rule_out]"
+          - certainty: "enum[confirmed, suspected, ruled_out]"
+    
+    - name: "medications"
+      type: "list"
+      required: true
+      extraction:
+        method: "medication_extraction"
+        source: "Medications"
+        model_hint: "biobert-drugs"
+        structure:
+          - medication_name: "text"
+          - generic_name: "text"
+          - dosage: "text"
+          - route: "enum[oral, IV, IM, topical, inhaled, other]"
+          - frequency: "text"
+          - prn: "boolean"
+          - indication: "text"
+        normalization:
+          - "map_to_rxnorm"
+          - "extract_active_ingredient"
+    
+    - name: "allergies"
+      type: "list"
+      required: true
+      extraction:
+        method: "allergy_extraction"
+        source: "Allergies"
+        structure:
+          - allergen: "text"
+          - reaction: "text"
+          - severity: "enum[mild, moderate, severe, life_threatening]"
+        special_values:
+          - "NKDA": "No Known Drug Allergies"
+          - "NKA": "No Known Allergies"
+    
+    - name: "vital_signs"
+      type: "complex"
+      required: false
+      extraction:
+        method: "vital_extraction"
+        source: "Physical Examination"
+        components:
+          - blood_pressure:
+              systolic: "number"
+              diastolic: "number"
+              unit: "mmHg"
+          - heart_rate:
+              value: "number"
+              unit: "bpm"
+          - temperature:
+              value: "number"
+              unit: "enum[F, C]"
+          - respiratory_rate:
+              value: "number"
+              unit: "per minute"
+          - oxygen_saturation:
+              value: "number"
+              unit: "percent"
+          - weight:
+              value: "number"
+              unit: "enum[kg, lbs]"
+          - height:
+              value: "number"
+              unit: "enum[cm, inches]"
+          - bmi:
+              value: "number"
+              calculated: true
+    
+    - name: "lab_results"
+      type: "list"
+      required: false
+      extraction:
+        method: "lab_extraction"
+        source: "Diagnostic Results"
+        model_hint: "clinical-lab-bert"
+        structure:
+          - test_name: "text"
+          - value: "number|text"
+          - unit: "text"
+          - reference_range: "text"
+          - flag: "enum[normal, high, low, critical]"
+          - date: "date_year_only"
+        common_panels:
+          - "CBC"
+          - "BMP"
+          - "CMP"
+          - "Lipid Panel"
+          - "Thyroid Panel"
+    
+    - name: "procedures"
+      type: "list"
+      required: false
+      extraction:
+        method: "procedure_extraction"
+        sources: ["Assessment and Plan", "Physical Examination"]
+        include_codes: true
+        code_systems:
+          - "CPT"
+          - "SNOMED-CT"
+        structure:
+          - procedure_name: "text"
+          - code: "medical_code"
+          - date: "date_year_only"
+          - provider_type: "text"
+    
+    - name: "clinical_summary"
+      type: "text"
+      required: false
+      extraction:
+        method: "abstractive_summarization"
+        sources: ["History of Present Illness", "Assessment and Plan"]
+        model_hint: "clinical-longformer"
+        max_length: 1000
+        focus_on:
+          - "Key findings"
+          - "Treatment decisions"
+          - "Follow-up plans"
+        exclude_phi: true
+
+quality:
+  min_confidence: 0.95
+  
+  validation_rules:
+    - type: "phi_compliance"
+      rules:
+        - "No patient names in output"
+        - "No specific dates except years"
+        - "No geographic identifiers smaller than state"
+        - "No contact information"
+        - "No unique identifiers"
+    
+    - type: "medical_consistency"
+      rules:
+        - "Medications should match diagnosed conditions"
+        - "Allergies should be consistent across sections"
+        - "Vital signs within physiological ranges"
+        - "Lab values within possible ranges"
+    
+    - type: "completeness"
+      required_elements:
+        - "At least one diagnosis"
+        - "Medication list (even if 'none')"
+        - "Allergy status"
+        - "Document type classification"
+    
+    - type: "clinical_validity"
+      rules:
+        - "ICD-10 codes must be valid"
+        - "Medication dosages must be reasonable"
+        - "Anatomical terms must be correct"
+
+model_hints:
+  deidentification:
+    required: true
+    preferred_models: ["biobert-deid", "clinical-deid-bert", "i2b2-deid"]
+    validation_required: true
+  
+  medical_ner:
+    preferred_models: ["biobert", "clinical-bert", "pubmedbert", "bioclinicalbert"]
+    entity_types:
+      - "disease"
+      - "drug"
+      - "procedure"
+      - "anatomy"
+      - "symptom"
+      - "test"
+  
+  code_mapping:
+    preferred_models: ["sapbert", "coder-bert", "clinical-code-bert"]
+    code_systems:
+      - "ICD-10-CM"
+      - "SNOMED-CT"
+      - "RxNorm"
+      - "LOINC"
+      - "CPT"
+  
+  section_segmentation:
+    preferred_models: ["clinical-longformer", "section-bert", "medsecbert"]
+    handle_variations: true
+  
+  lab_value_extraction:
+    preferred_models: ["labert", "clinical-lab-bert"]
+    normalize_units: true
+    detect_abnormal: true
