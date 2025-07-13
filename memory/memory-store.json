@@ -1,0 +1,28 @@
+{
+  "default": [
+    {
+      "key": "validation-framework-complete",
+      "value": "true",
+      "namespace": "default",
+      "timestamp": 1752338088025
+    },
+    {
+      "key": "output/formats/json-invoice",
+      "value": "{\"template\": \"Invoice JSON with schema validation\", \"features\": [\"custom schema\", \"transformations\", \"validation\"], \"example\": \"INV-123456 format\"}",
+      "namespace": "default",
+      "timestamp": 1752355783008
+    },
+    {
+      "key": "output/formats/markdown-report",
+      "value": "{\"template\": \"Financial report markdown with tables and charts\", \"features\": [\"tera templates\", \"custom filters\", \"table styling\"], \"example\": \"Revenue by segment tables\"}",
+      "namespace": "default",
+      "timestamp": 1752355789964
+    },
+    {
+      "key": "output/formats/streaming-csv",
+      "value": "{\"template\": \"CSV streaming for large datasets\", \"features\": [\"chunk processing\", \"progress callbacks\", \"error recovery\"], \"performance\": \"64KB buffer, 1000 chunk size\"}",
+      "namespace": "default",
+      "timestamp": 1752355796781
+    }
+  ]
+}
