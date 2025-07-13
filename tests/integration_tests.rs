@@ -11,8 +11,8 @@ use neural_doc_flow::{
     NeuralDocumentFlowSystem, FlowSystemConfig, FlowProcessingResult,
     pipeline::{DocumentType, QualityRequirements, ProcessingRequest, Enhancement},
 };
-use neural_doc_flow_coordination::{DaaCoordinationSystem, CoordinationConfig};
-use neural_doc_flow_processors::{NeuralProcessingSystem, NeuralProcessingConfig};
+use doc_ingest::coordination::{DaaCoordinationSystem, CoordinationConfig};
+use doc_ingest::processors::{NeuralProcessingSystem, NeuralProcessingConfig};
 use tempfile::{NamedTempFile, TempDir};
 use tokio::test;
 

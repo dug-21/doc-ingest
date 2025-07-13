@@ -108,6 +108,7 @@ impl NeuralProcessor for BasicNeuralProcessor {
 
 /// Text enhancement processor
 pub struct TextEnhancementProcessor {
+    #[allow(dead_code)]
     inner: BasicNeuralProcessor,
 }
 
@@ -127,6 +128,7 @@ impl Default for TextEnhancementProcessor {
 
 /// Layout analysis processor
 pub struct LayoutAnalysisProcessor {
+    #[allow(dead_code)]
     inner: BasicNeuralProcessor,
 }
 
@@ -146,6 +148,7 @@ impl Default for LayoutAnalysisProcessor {
 
 /// Quality assessment processor
 pub struct QualityAssessmentProcessor {
+    #[allow(dead_code)]
     inner: BasicNeuralProcessor,
 }
 

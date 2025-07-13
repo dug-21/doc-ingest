@@ -3,7 +3,7 @@
 //! Tests for Distributed Autonomous Agent coordination including agent spawning,
 //! task distribution, consensus mechanisms, and coordination protocols.
 
-use neural_doc_flow_coordination::*;
+use doc_ingest::coordination::*;
 use std::time::Duration;
 use tempfile::TempDir;
 use tokio::test;

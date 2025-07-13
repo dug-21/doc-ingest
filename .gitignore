@@ -1,4 +1,18 @@
 # Temporary files and session artifacts
 99%
-test/phase1-foundation-validation.test.js
 target/
+
+# Pure Rust policy - exclude JavaScript files
+*.js
+*.ts
+*.mjs
+*.cjs
+node_modules/
+package.json
+package-lock.json
+
+# Exclude non-Rust dependencies
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+scripts/*.js

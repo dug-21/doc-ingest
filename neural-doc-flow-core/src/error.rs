@@ -97,6 +97,12 @@ pub enum NeuralError {
     #[error("Neural model training failed: {reason}")]
     TrainingFailed { reason: String },
 
+    #[error("Neural initialization error: {0}")]
+    InitializationError(String),
+
+    #[error("Tensor operation failed: operation={operation}, details={details}")]
+    TensorOperationFailed { operation: String, details: String },
+
     #[error("CUDA/GPU error: {reason}")]
     GpuError { reason: String },
 }

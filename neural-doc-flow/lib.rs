@@ -2,9 +2,9 @@
 /// Integrates DAA coordination with neural processing for high-accuracy document enhancement
 
 pub mod pipeline;
-pub mod preprocessing;
-pub mod features;
-pub mod scoring;
+// pub mod preprocessing;
+// pub mod features;
+// pub mod scoring;
 
 pub use pipeline::*;
 

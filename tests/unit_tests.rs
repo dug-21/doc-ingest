@@ -3,9 +3,9 @@
 //! These tests focus on testing individual modules and functions in isolation
 //! to ensure each component works correctly on its own.
 
-use neural_doc_flow::*;
-use neural_doc_flow_coordination::*;
-use neural_doc_flow_processors::*;
+use doc_ingest::*;
+use doc_ingest::coordination::*;
+use doc_ingest::processors::*;
 use std::collections::HashMap;
 use std::time::Duration;
 use tempfile::{NamedTempFile, TempDir};

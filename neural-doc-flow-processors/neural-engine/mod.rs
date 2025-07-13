@@ -11,6 +11,12 @@ pub mod layout_analysis;
 pub mod quality_assessment;
 pub mod simd_optimizer;
 
+// Re-export main types
+pub use fann_wrapper::{FannWrapper, NetworkType, NetworkStats};
+pub use text_enhancement::{TextEnhancer, TextEnhancementConfig, TextEnhancementMetrics};
+pub use layout_analysis::{LayoutAnalyzer, LayoutAnalysisConfig, LayoutAnalysisMetrics};
+pub use quality_assessment::{QualityAssessor, QualityAssessmentConfig, QualityReport, QualityAssessmentMetrics};
+
 use fann_wrapper::FannWrapper;
 
 /// Neural Engine for Document Processing

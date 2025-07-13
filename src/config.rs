@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+use crate::error::{NeuralDocFlowError, Result};
 use neural_doc_flow_coordination::CoordinationConfig;
 
 /// Ingestion system configuration

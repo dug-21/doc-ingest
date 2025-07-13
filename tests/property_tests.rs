@@ -4,9 +4,9 @@
 //! for a wide range of inputs, helping to catch edge cases.
 
 use proptest::prelude::*;
-use neural_doc_flow::*;
-use neural_doc_flow_coordination::*;
-use neural_doc_flow_processors::*;
+use doc_ingest::*;
+use doc_ingest::coordination::*;
+use doc_ingest::processors::*;
 
 // Test that document processing always produces valid output
 proptest! {

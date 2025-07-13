@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use anyhow::{Result, anyhow};
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock, Mutex};

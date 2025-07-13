@@ -12,11 +12,10 @@ use serde::{Deserialize, Serialize};
 use tokio::io::AsyncRead;
 
 use crate::config::{Config, SourceConfig};
-use crate::core::{ContentBlock, DocumentMetadata, DocumentStructure, ExtractedDocument, ExtractionMetrics};
+use crate::core::{Document, DocumentMetadata, DocumentStructure};
 use crate::error::{NeuralDocFlowError, Result};
 
 /// Document source input types
-#[derive(Debug, Clone)]
 pub enum SourceInput {
     /// File path input
     File {
@@ -45,6 +44,30 @@ pub enum SourceInput {
     },
 }
 
+impl std::fmt::Debug for SourceInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::File { path, metadata } => f.debug_struct("File")
+                .field("path", path)
+                .field("metadata", metadata)
+                .finish(),
+            Self::Memory { data, filename, mime_type } => f.debug_struct("Memory")
+                .field("data_len", &data.len())
+                .field("filename", filename)
+                .field("mime_type", mime_type)
+                .finish(),
+            Self::Stream { reader: _, size_hint, mime_type } => f.debug_struct("Stream")
+                .field("size_hint", size_hint)
+                .field("mime_type", mime_type)
+                .finish(),
+            Self::Url { url, headers } => f.debug_struct("Url")
+                .field("url", url)
+                .field("headers", headers)
+                .finish(),
+        }
+    }
+}
+
 /// Document source trait - implemented by all source plugins
 #[async_trait]
 pub trait DocumentSource: Send + Sync {
@@ -70,7 +93,7 @@ pub trait DocumentSource: Send + Sync {
     async fn validate(&self, input: &SourceInput) -> Result<ValidationResult>;
     
     /// Extract content from the input
-    async fn extract(&self, input: SourceInput) -> Result<ExtractedDocument>;
+    async fn extract(&self, input: SourceInput) -> Result<Document>;
     
     /// Get configuration schema for this source
     fn config_schema(&self) -> serde_json::Value;
@@ -231,7 +254,8 @@ impl SourceManager {
 
     /// Discover and load plugin sources
     fn discover_plugins(&mut self) -> Result<()> {
-        for plugin_dir in &self.plugin_dirs {
+        let plugin_dirs = self.plugin_dirs.clone();
+        for plugin_dir in &plugin_dirs {
             if plugin_dir.exists() {
                 self.load_plugins_from_directory(plugin_dir)?;
             }

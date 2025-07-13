@@ -7,14 +7,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::config::{Config, DaaConfig};
-use crate::core::ExtractedDocument;
+use crate::core::Document;
 use crate::error::{NeuralDocFlowError, Result};
 use crate::sources::{DocumentSource, SourceInput};
 
@@ -26,7 +26,7 @@ pub struct DaaCoordinator {
     consensus_engine: ConsensusEngine,
     task_scheduler: TaskScheduler,
     health_monitor: HealthMonitor,
-    metrics: DaaMetrics,
+    metrics: Arc<RwLock<DaaMetrics>>,
 }
 
 impl DaaCoordinator {
@@ -45,7 +45,7 @@ impl DaaCoordinator {
             consensus_engine,
             task_scheduler,
             health_monitor,
-            metrics: DaaMetrics::new(),
+            metrics: Arc::new(RwLock::new(DaaMetrics::new())),
         })
     }
 
@@ -54,7 +54,7 @@ impl DaaCoordinator {
         &self,
         source: &dyn DocumentSource,
         input: SourceInput,
-    ) -> Result<ExtractedDocument> {
+    ) -> Result<Document> {
         let task_id = Uuid::new_v4().to_string();
         let start_time = Instant::now();
 
@@ -82,7 +82,7 @@ impl DaaCoordinator {
         };
 
         // Update metrics
-        self.metrics.record_extraction(start_time.elapsed());
+        self.metrics.write().await.record_extraction(start_time.elapsed());
 
         Ok(final_result)
     }
@@ -91,7 +91,7 @@ impl DaaCoordinator {
     pub async fn coordinate_batch_extraction(
         &self,
         inputs: Vec<SourceInput>,
-    ) -> Result<Vec<ExtractedDocument>> {
+    ) -> Result<Vec<Document>> {
         let batch_id = Uuid::new_v4().to_string();
         let start_time = Instant::now();
 
@@ -113,7 +113,7 @@ impl DaaCoordinator {
         let results = self.task_scheduler.execute_batch(tasks).await?;
 
         // Update metrics
-        self.metrics.record_batch_extraction(results.len(), start_time.elapsed());
+        self.metrics.write().await.record_batch_extraction(results.len(), start_time.elapsed());
 
         Ok(results)
     }
@@ -138,18 +138,18 @@ impl DaaCoordinator {
     }
 
     /// Get document processing count
-    pub fn get_document_count(&self) -> u64 {
-        self.metrics.documents_processed
+    pub async fn get_document_count(&self) -> u64 {
+        self.metrics.read().await.documents_processed
     }
 
     /// Get total processing time
-    pub fn get_total_time(&self) -> Duration {
-        self.metrics.total_processing_time
+    pub async fn get_total_time(&self) -> Duration {
+        self.metrics.read().await.total_processing_time
     }
 
     /// Get active agent count
-    pub fn get_active_agent_count(&self) -> usize {
-        self.metrics.active_agents
+    pub async fn get_active_agent_count(&self) -> usize {
+        self.metrics.read().await.active_agents
     }
 
     /// Shutdown coordinator
@@ -179,7 +179,7 @@ pub struct Agent {
 
 impl Agent {
     /// Create new agent
-    pub fn new(id: String, agent_type: AgentType, coordinator_sender: &Sender<AgentMessage>) -> Result<Self> {
+    pub fn new(id: String, agent_type: AgentType, _coordinator_sender: &Sender<AgentMessage>) -> Result<Self> {
         let (sender, receiver) = unbounded();
         let task_executor = TaskExecutor::new(agent_type.clone());
 
@@ -487,7 +487,7 @@ pub struct AgentStatus {
 }
 
 /// Extraction task
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ExtractionTask {
     pub id: String,
     pub source_id: String,
@@ -513,7 +513,7 @@ impl ConsensusEngine {
     }
 
     /// Validate result through consensus
-    pub async fn validate_result(&self, result: ExtractedDocument) -> Result<ExtractedDocument> {
+    pub async fn validate_result(&self, result: Document) -> Result<Document> {
         // Implementation would collect validation votes from multiple agents
         // and apply consensus algorithm
         Ok(result)
@@ -547,14 +547,14 @@ impl TaskScheduler {
     }
 
     /// Execute single task
-    pub async fn execute_task(&self, task: ExtractionTask) -> Result<ExtractedDocument> {
+    pub async fn execute_task(&self, task: ExtractionTask) -> Result<Document> {
         // Implementation would schedule task execution
         // For now, return mock result
-        Ok(ExtractedDocument::new(task.source_id))
+        Ok(Document::new(task.source_id, "application/octet-stream".to_string()))
     }
 
     /// Execute batch of tasks
-    pub async fn execute_batch(&self, tasks: Vec<ExtractionTask>) -> Result<Vec<ExtractedDocument>> {
+    pub async fn execute_batch(&self, tasks: Vec<ExtractionTask>) -> Result<Vec<Document>> {
         let mut results = Vec::new();
         
         for task in tasks {
@@ -723,8 +723,8 @@ mod tests {
         
         match coordinator {
             Ok(coord) => {
-                assert_eq!(coord.get_document_count(), 0);
-                assert_eq!(coord.get_active_agent_count(), 0);
+                assert_eq!(coord.get_document_count().await, 0);
+                assert_eq!(coord.get_active_agent_count().await, 0);
             }
             Err(_) => {
                 // Expected in test environment

@@ -37,10 +37,8 @@ parking_lot = { version = "0.12", optional = true }
 # SIMD dependencies
 wide = { version = "0.7", optional = true }
 
-# Neural processing dependencies
-candle-core = { version = "0.3", optional = true }
-candle-nn = { version = "0.3", optional = true } 
-tch = { version = "0.13", optional = true }
+# Neural processing dependencies - Pure Rust with ruv-FANN
+ruv-fann = { version = "0.1.6", optional = true }
 
 # Performance monitoring
 metrics = { version = "0.21", optional = true }
@@ -48,8 +46,7 @@ metrics = { version = "0.21", optional = true }
 [features]
 default = ["performance"]
 performance = ["rayon", "parking_lot", "crossbeam"]
-neural = ["candle-core", "candle-nn"]
-pytorch = ["tch"]
+neural = ["ruv-fann"]
 simd = ["wide"]
 monitoring = ["metrics"]
 

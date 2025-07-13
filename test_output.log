@@ -1,0 +1,455 @@
+warning: field `name` is never read
+   --> neural-doc-flow-core/src/traits/processor.rs:252:16
+    |
+251 | pub struct PipelineBuilder {
+    |            --------------- field in this struct
+252 |     pub(crate) name: String,
+    |                ^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `neural-doc-flow-core` (lib) generated 1 warning
+warning: unused import: `anyhow`
+ --> neural-doc-flow-coordination/agents/validator.rs:1:22
+  |
+1 | use anyhow::{Result, anyhow};
+  |                      ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `uuid::Uuid`
+ --> neural-doc-flow-coordination/agents/validator.rs:4:5
+  |
+4 | use uuid::Uuid;
+  |     ^^^^^^^^^^
+
+warning: unused imports: `AgentCapabilities`, `AgentState`, `AgentType`, `CoordinationMessage`, and `MessageType`
+ --> neural-doc-flow-coordination/agents/validator.rs:7:23
+  |
+7 | use super::{DaaAgent, AgentState, AgentCapabilities, AgentType, CoordinationMessage, MessageType};
+  |                       ^^^^^^^^^^  ^^^^^^^^^^^^^^^^^  ^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused imports: `AgentStatus`, `MessagePriority`, and `resources::ResourceRequirement`
+  --> neural-doc-flow-coordination/agents/validator.rs:9:38
+   |
+9  |     agents::base::{Agent, BaseAgent, AgentStatus},
+   |                                      ^^^^^^^^^^^
+10 |     messaging::{Message, MessagePriority},
+   |                          ^^^^^^^^^^^^^^^
+11 |     resources::ResourceRequirement,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow`
+ --> neural-doc-flow-coordination/agents/enhancer.rs:2:22
+  |
+2 | use anyhow::{Result, anyhow};
+  |                      ^^^^^^
+
+warning: unused import: `uuid::Uuid`
+ --> neural-doc-flow-coordination/agents/enhancer.rs:5:5
+  |
+5 | use uuid::Uuid;
+  |     ^^^^^^^^^^
+
+warning: unused imports: `AgentState`, `AgentStatus`, `Agent`, `CoordinationMessage`, `MessagePriority`, and `resources::ResourceRequirement`
+  --> neural-doc-flow-coordination/agents/enhancer.rs:8:20
+   |
+8  |     agents::base::{Agent, BaseAgent, AgentStatus, AgentState, CoordinationMessage},
+   |                    ^^^^^             ^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^
+9  |     messaging::{Message, MessagePriority},
+   |                          ^^^^^^^^^^^^^^^
+10 |     resources::ResourceRequirement,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `uuid::Uuid`
+ --> neural-doc-flow-coordination/agents/formatter.rs:5:5
+  |
+5 | use uuid::Uuid;
+  |     ^^^^^^^^^^
+
+warning: unused imports: `AgentState`, `AgentStatus`, `Agent`, `CoordinationMessage`, `MessagePriority`, and `resources::ResourceRequirement`
+  --> neural-doc-flow-coordination/agents/formatter.rs:8:20
+   |
+8  |     agents::base::{Agent, BaseAgent, AgentStatus, AgentState, CoordinationMessage},
+   |                    ^^^^^             ^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^
+9  |     messaging::{Message, MessagePriority},
+   |                          ^^^^^^^^^^^^^^^
+10 |     resources::ResourceRequirement,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `MessageType`
+ --> neural-doc-flow-coordination/messaging/mod.rs:4:42
+  |
+4 | use super::agents::{CoordinationMessage, MessageType};
+  |                                          ^^^^^^^^^^^
+
+warning: unused import: `crate::messaging::Message`
+  --> neural-doc-flow-coordination/messaging/fault_tolerance.rs:11:5
+   |
+11 | use crate::messaging::Message;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `broadcast`
+ --> neural-doc-flow-coordination/messaging/routing.rs:5:27
+  |
+5 | use tokio::sync::{RwLock, broadcast};
+  |                           ^^^^^^^^^
+
+warning: unused import: `broadcast`
+ --> neural-doc-flow-coordination/messaging/protocols.rs:3:27
+  |
+3 | use tokio::sync::{RwLock, broadcast, mpsc, Mutex};
+  |                           ^^^^^^^^^
+
+warning: unused imports: `AgentState`, `MessagePriority`, and `Message`
+  --> neural-doc-flow-coordination/fault_tolerance.rs:12:27
+   |
+12 |     agents::base::{Agent, AgentState},
+   |                           ^^^^^^^^^^
+13 |     messaging::{Message, MessagePriority},
+   |                 ^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused variable: `start_time`
+   --> neural-doc-flow-coordination/lib.rs:150:13
+    |
+150 |         let start_time = std::time::Instant::now();
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_start_time`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `from`
+   --> neural-doc-flow-coordination/messaging/mod.rs:475:36
+    |
+475 |     pub async fn find_route(&self, from: Uuid, to: Uuid) -> Result<AgentRoute, Box<dyn std::error::Error + Send + Sync>> {
+    |                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_from`
+
+warning: unused variable: `agent_type`
+   --> neural-doc-flow-coordination/lib.rs:298:40
+    |
+298 |     async fn find_agent_by_type(&self, agent_type: &agents::AgentType) -> Option<Uuid> {
+    |                                        ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_agent_type`
+
+warning: unused variable: `agent`
+   --> neural-doc-flow-coordination/agents/mod.rs:124:29
+    |
+124 |                 if let Some(agent) = agents.get(&target_id) {
+    |                             ^^^^^ help: if this is intentional, prefix it with an underscore: `_agent`
+
+warning: unused variable: `agent`
+   --> neural-doc-flow-coordination/agents/mod.rs:130:25
+    |
+130 |                 for (_, agent) in agents.iter() {
+    |                         ^^^^^ help: if this is intentional, prefix it with an underscore: `_agent`
+
+warning: unused variable: `doc_id`
+   --> neural-doc-flow-coordination/agents/enhancer.rs:188:38
+    |
+188 |     async fn enhance_document(&self, doc_id: String, content: &str) -> Result<EnhancedContent> {
+    |                                      ^^^^^^ help: if this is intentional, prefix it with an underscore: `_doc_id`
+
+warning: unused variable: `doc_id`
+   --> neural-doc-flow-coordination/agents/formatter.rs:259:37
+    |
+259 |     async fn format_document(&self, doc_id: String, content: &str, format: &str, style_name: &str) -> Result<FormattedContent> {
+    |                                     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_doc_id`
+
+warning: unused import: `Agent`
+  --> neural-doc-flow-coordination/fault_tolerance.rs:12:20
+   |
+12 |     agents::base::{Agent, AgentState},
+   |                    ^^^^^
+
+warning: unused import: `DaaAgent`
+ --> neural-doc-flow-coordination/agents/validator.rs:7:13
+  |
+7 | use super::{DaaAgent, AgentState, AgentCapabilities, AgentType, CoordinationMessage, MessageType};
+  |             ^^^^^^^^
+
+warning: unused import: `Agent`
+ --> neural-doc-flow-coordination/agents/validator.rs:9:20
+  |
+9 |     agents::base::{Agent, BaseAgent, AgentStatus},
+  |                    ^^^^^
+
+warning: methods `coordinate_sequential` and `coordinate_adaptive` are never used
+   --> neural-doc-flow-coordination/lib.rs:171:14
+    |
+88  | impl DaaCoordinationSystem {
+    | -------------------------- methods in this implementation
+...
+171 |     async fn coordinate_sequential(&self, mut data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    |              ^^^^^^^^^^^^^^^^^^^^^
+...
+280 |     async fn coordinate_adaptive(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    |              ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: field `topology` is never read
+  --> neural-doc-flow-coordination/agents/mod.rs:90:5
+   |
+87 | pub struct AgentRegistry {
+   |            ------------- field in this struct
+...
+90 |     topology: super::topologies::TopologyType,
+   |     ^^^^^^^^
+
+warning: field `supported_formats` is never read
+  --> neural-doc-flow-coordination/agents/extractor.rs:13:5
+   |
+6  | pub struct ExtractorAgent {
+   |            -------------- field in this struct
+...
+13 |     supported_formats: Vec<DocumentFormat>,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: fields `base` and `validation_cache` are never read
+  --> neural-doc-flow-coordination/agents/validator.rs:17:5
+   |
+16 | pub struct ValidatorAgent {
+   |            -------------- fields in this struct
+17 |     base: BaseAgent,
+   |     ^^^^
+18 |     validation_rules: Arc<RwLock<ValidationRules>>,
+19 |     validation_cache: Arc<Mutex<lru::LruCache<String, ValidationResult>>>,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: method `validate_document` is never used
+   --> neural-doc-flow-coordination/agents/validator.rs:121:14
+    |
+85  | impl ValidatorAgent {
+    | ------------------- method in this implementation
+...
+121 |     async fn validate_document(&self, doc_id: String, content: &str) -> Result<ValidationResult> {
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: field `base` is never read
+  --> neural-doc-flow-coordination/agents/enhancer.rs:16:5
+   |
+15 | pub struct EnhancerAgent {
+   |            ------------- field in this struct
+16 |     base: BaseAgent,
+   |     ^^^^
+
+warning: method `enhance_document` is never used
+   --> neural-doc-flow-coordination/agents/enhancer.rs:188:14
+    |
+163 | impl EnhancerAgent {
+    | ------------------ method in this implementation
+...
+188 |     async fn enhance_document(&self, doc_id: String, content: &str) -> Result<EnhancedContent> {
+    |              ^^^^^^^^^^^^^^^^
+
+warning: field `base` is never read
+  --> neural-doc-flow-coordination/agents/formatter.rs:16:5
+   |
+15 | pub struct FormatterAgent {
+   |            -------------- field in this struct
+16 |     base: BaseAgent,
+   |     ^^^^
+
+warning: method `format_document` is never used
+   --> neural-doc-flow-coordination/agents/formatter.rs:259:14
+    |
+232 | impl FormatterAgent {
+    | ------------------- method in this implementation
+...
+259 |     async fn format_document(&self, doc_id: String, content: &str, format: &str, style_name: &str) -> Result<FormattedContent> {
+    |              ^^^^^^^^^^^^^^^
+
+warning: field `name` is never read
+  --> neural-doc-flow-coordination/messaging/fault_tolerance.rs:24:5
+   |
+22 | pub struct CircuitBreaker {
+   |            -------------- field in this struct
+23 |     id: Uuid,
+24 |     name: String,
+   |     ^^^^
+
+warning: fields `stream_id`, `sender_id`, `receiver_id`, `created_at`, and `chunk_size` are never read
+   --> neural-doc-flow-coordination/messaging/protocols.rs:196:5
+    |
+195 | struct StreamInfo {
+    |        ---------- fields in this struct
+196 |     stream_id: Uuid,
+    |     ^^^^^^^^^
+197 |     sender_id: Uuid,
+    |     ^^^^^^^^^
+198 |     receiver_id: Uuid,
+    |     ^^^^^^^^^^^
+199 |     buffer: mpsc::Sender<Message>,
+200 |     created_at: DateTime<Utc>,
+    |     ^^^^^^^^^^
+201 |     chunk_size: usize,
+    |     ^^^^^^^^^^
+
+warning: field `fanout` is never read
+   --> neural-doc-flow-coordination/messaging/protocols.rs:302:5
+    |
+298 | pub struct GossipProtocol {
+    |            -------------- field in this struct
+...
+302 |     fanout: usize,
+    |     ^^^^^^
+
+warning: method `select_gossip_targets` is never used
+   --> neural-doc-flow-coordination/messaging/protocols.rs:365:14
+    |
+318 | impl GossipProtocol {
+    | ------------------- method in this implementation
+...
+365 |     async fn select_gossip_targets(&self) -> Vec<Uuid> {
+    |              ^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `agent_id` is never read
+  --> neural-doc-flow-coordination/fault_tolerance.rs:27:5
+   |
+26 | pub struct HealthMonitor {
+   |            ------------- field in this struct
+27 |     agent_id: Uuid,
+   |     ^^^^^^^^
+
+warning: fields `failed_agent`, `backup_agent`, `started_at`, and `state_transferred` are never read
+  --> neural-doc-flow-coordination/fault_tolerance.rs:95:5
+   |
+94 | struct FailoverInfo {
+   |        ------------ fields in this struct
+95 |     failed_agent: Uuid,
+   |     ^^^^^^^^^^^^
+96 |     backup_agent: Uuid,
+   |     ^^^^^^^^^^^^
+97 |     started_at: Instant,
+   |     ^^^^^^^^^^
+98 |     state_transferred: bool,
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = note: `FailoverInfo` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `complete_failover` is never used
+   --> neural-doc-flow-coordination/fault_tolerance.rs:352:14
+    |
+326 | impl FailoverManager {
+    | -------------------- method in this implementation
+...
+352 |     async fn complete_failover(&self, failed_id: Uuid) -> Result<()> {
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: `neural-doc-flow-coordination` (lib) generated 40 warnings (run `cargo fix --lib -p neural-doc-flow-coordination` to apply 14 suggestions)
+   Compiling doc-ingest v0.1.0 (/workspaces/doc-ingest)
+   Compiling async-stream-impl v0.3.6
+warning: unused imports: `Deserialize` and `Serialize`
+  --> src/daa.rs:12:13
+   |
+12 | use serde::{Deserialize, Serialize};
+   |             ^^^^^^^^^^^  ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unexpected `cfg` condition value: `pdf`
+   --> src/sources.rs:302:7
+    |
+302 | #[cfg(feature = "pdf")]
+    |       ^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `metrics`, `monitoring`, `neural`, `prometheus`, `ruv-fann`, and `simd`
+    = help: consider adding `pdf` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `docx`
+   --> src/sources.rs:458:7
+    |
+458 | #[cfg(feature = "docx")]
+    |       ^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `metrics`, `monitoring`, `neural`, `prometheus`, `ruv-fann`, and `simd`
+    = help: consider adding `docx` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `std::sync::Arc`
+ --> src/sources.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `DocumentMetadata` and `DocumentStructure`
+  --> src/sources.rs:15:29
+   |
+15 | use crate::core::{Document, DocumentMetadata, DocumentStructure};
+   |                             ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `pdf`
+   --> src/sources.rs:232:15
+    |
+232 |         #[cfg(feature = "pdf")]
+    |               ^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `metrics`, `monitoring`, `neural`, `prometheus`, `ruv-fann`, and `simd`
+    = help: consider adding `pdf` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `docx`
+   --> src/sources.rs:239:15
+    |
+239 |         #[cfg(feature = "docx")]
+    |               ^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `metrics`, `monitoring`, `neural`, `prometheus`, `ruv-fann`, and `simd`
+    = help: consider adding `docx` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `html`
+   --> src/sources.rs:246:15
+    |
+246 |         #[cfg(feature = "html")]
+    |               ^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `metrics`, `monitoring`, `neural`, `prometheus`, `ruv-fann`, and `simd`
+    = help: consider adding `html` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `tokio::sync::RwLock`
+  --> src/lib.rs:35:5
+   |
+35 | use tokio::sync::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `result`
+   --> src/daa.rs:237:13
+    |
+237 |         let result = self.task_executor.execute(task).await?;
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_result`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `document`
+   --> src/neural.rs:147:51
+    |
+147 |     async fn calculate_document_confidence(&self, document: &Document) -> Result<f32> {
+    |                                                   ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_document`
+
+warning: variable does not need to be mutable
+   --> src/sources.rs:293:27
+    |
+293 |     pub async fn shutdown(mut self) -> Result<()> {
+    |                           ----^^^^
+    |                           |
+    |                           help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+error[E0689]: can't call method `max` on ambiguous numeric type `{float}`
+   --> src/neural.rs:492:41
+    |
+492 |         let final_confidence: f32 = sum.max(0.0).min(1.0);
+    |                                         ^^^
+    |
+help: you must specify a type for this binding, like `f32`
+    |
+491 |         let sum: f32 = base_confidence + structure_bonus + content_penalty;
+    |                +++++
+
+For more information about this error, try `rustc --explain E0689`.
+warning: `doc-ingest` (lib) generated 12 warnings
+error: could not compile `doc-ingest` (lib) due to 1 previous error; 12 warnings emitted
+warning: build failed, waiting for other jobs to finish...

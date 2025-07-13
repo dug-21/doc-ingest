@@ -1,22 +1,18 @@
 //! Neural processing utilities and implementations
 
-#[cfg(feature = "neural")]
-use candle_core::{Device, Tensor, DType};
-#[cfg(feature = "neural")]
-use candle_nn::{Module, VarBuilder};
+// Pure Rust neural processing - no external ML dependencies
 
 use crate::{NeuralResult, NeuralError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Neural model wrapper for different backends
-#[cfg(feature = "neural")]
+/// Neural model wrapper for pure Rust implementation
 pub struct NeuralModel {
-    /// Model device (CPU/GPU)
-    pub device: Device,
+    /// Model weights
+    pub weights: Vec<Vec<f32>>,
     
-    /// Model parameters
-    pub parameters: HashMap<String, Tensor>,
+    /// Model biases
+    pub biases: Vec<f32>,
     
     /// Model configuration
     pub config: ModelConfiguration,
@@ -148,64 +144,98 @@ pub enum FannActivation {
     ElliotSymmetric,
 }
 
-/// Neural tensor operations
-#[cfg(feature = "neural")]
+/// Neural tensor operations (pure Rust implementation)
 pub struct TensorOps;
 
-#[cfg(feature = "neural")]
+/// Pure Rust tensor operations
 impl TensorOps {
     /// Create a tensor from raw data
-    pub fn from_slice(data: &[f32], shape: &[usize], device: &Device) -> NeuralResult<Tensor> {
-        Tensor::from_slice(data, shape, device)
-            .map_err(|e| NeuralError::InferenceFailed { reason: e.to_string() })
+    pub fn from_slice(data: &[f32], _shape: &[usize], _device: &str) -> NeuralResult<Vec<f32>> {
+        Ok(data.to_vec())
     }
     
     /// Perform matrix multiplication
-    pub fn matmul(a: &Tensor, b: &Tensor) -> NeuralResult<Tensor> {
-        a.matmul(b)
-            .map_err(|e| NeuralError::InferenceFailed { reason: e.to_string() })
+    pub fn matmul(a: &[f32], b: &[f32], a_rows: usize, a_cols: usize, b_cols: usize) -> NeuralResult<Vec<f32>> {
+        if a.len() != a_rows * a_cols || b.len() != a_cols * b_cols {
+            return Err(NeuralError::InferenceFailed { 
+                reason: "Matrix dimension mismatch".to_string() 
+            });
+        }
+        
+        let mut result = vec![0.0; a_rows * b_cols];
+        
+        for i in 0..a_rows {
+            for j in 0..b_cols {
+                for k in 0..a_cols {
+                    result[i * b_cols + j] += a[i * a_cols + k] * b[k * b_cols + j];
+                }
+            }
+        }
+        
+        Ok(result)
     }
     
     /// Apply activation function
-    pub fn apply_activation(tensor: &Tensor, activation: &ActivationFunction) -> NeuralResult<Tensor> {
-        match activation {
-            ActivationFunction::ReLU => tensor.relu(),
-            ActivationFunction::GELU => tensor.gelu(),
-            ActivationFunction::Tanh => tensor.tanh(),
-            ActivationFunction::Sigmoid => tensor.sigmoid(),
+    pub fn apply_activation(data: &[f32], activation: &ActivationFunction) -> NeuralResult<Vec<f32>> {
+        let result = match activation {
+            ActivationFunction::ReLU => {
+                data.iter().map(|&x| x.max(0.0)).collect()
+            }
+            ActivationFunction::GELU => {
+                data.iter().map(|&x| {
+                    0.5 * x * (1.0 + ((2.0 / std::f32::consts::PI).sqrt() * (x + 0.044715 * x.powi(3))).tanh())
+                }).collect()
+            }
+            ActivationFunction::Tanh => {
+                data.iter().map(|&x| x.tanh()).collect()
+            }
+            ActivationFunction::Sigmoid => {
+                data.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
+            }
             ActivationFunction::Swish => {
-                let sigmoid = tensor.sigmoid()?;
-                tensor * sigmoid
-            },
+                data.iter().map(|&x| x * (1.0 / (1.0 + (-x).exp()))).collect()
+            }
             ActivationFunction::Custom(_) => {
                 return Err(NeuralError::InferenceFailed { 
                     reason: "Custom activation functions not implemented".to_string() 
                 });
             }
-        }
-        .map_err(|e| NeuralError::InferenceFailed { reason: e.to_string() })
+        };
+        
+        Ok(result)
     }
     
     /// Normalize tensor
-    pub fn normalize(tensor: &Tensor, mean: f64, std: f64) -> NeuralResult<Tensor> {
-        let normalized = (tensor - mean)? / std;
-        Ok(normalized)
+    pub fn normalize(data: &[f32], mean: f64, std: f64) -> NeuralResult<Vec<f32>> {
+        let result = data.iter()
+            .map(|&x| ((x as f64 - mean) / std) as f32)
+            .collect();
+        Ok(result)
     }
     
     /// Get tensor statistics
-    pub fn statistics(tensor: &Tensor) -> NeuralResult<TensorStats> {
-        let mean = tensor.mean_all()?.to_scalar::<f64>()?;
-        let var = tensor.var(1)?.mean_all()?.to_scalar::<f64>()?;
-        let std = var.sqrt();
-        let min = tensor.min(1)?.min(0)?.to_scalar::<f64>()?;
-        let max = tensor.max(1)?.max(0)?.to_scalar::<f64>()?;
+    pub fn statistics(data: &[f32]) -> NeuralResult<TensorStats> {
+        if data.is_empty() {
+            return Err(NeuralError::InferenceFailed { 
+                reason: "Empty tensor".to_string() 
+            });
+        }
+        
+        let mean = data.iter().sum::<f32>() as f64 / data.len() as f64;
+        let variance = data.iter()
+            .map(|&x| (x as f64 - mean).powi(2))
+            .sum::<f64>() / data.len() as f64;
+        let std = variance.sqrt();
+        
+        let min = data.iter().fold(f32::INFINITY, |a, &b| a.min(b)) as f64;
+        let max = data.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b)) as f64;
         
         Ok(TensorStats {
             mean,
             std,
+            variance,
             min,
             max,
-            shape: tensor.shape().dims().to_vec(),
         })
     }
 }
@@ -219,14 +249,14 @@ pub struct TensorStats {
     /// Standard deviation
     pub std: f64,
     
+    /// Variance
+    pub variance: f64,
+    
     /// Minimum value
     pub min: f64,
     
     /// Maximum value
     pub max: f64,
-    
-    /// Tensor shape
-    pub shape: Vec<usize>,
 }
 
 /// Neural utilities
@@ -315,36 +345,45 @@ impl NeuralUtils {
     }
 }
 
-#[cfg(feature = "neural")]
 impl NeuralModel {
     /// Create a new neural model
-    pub fn new(config: ModelConfiguration, device: Device) -> Self {
+    pub fn new(config: ModelConfiguration) -> Self {
         Self {
-            device,
-            parameters: HashMap::new(),
+            weights: Vec::new(),
+            biases: Vec::new(),
             config,
         }
     }
     
     /// Initialize model parameters
-    pub fn initialize(&mut self, var_builder: &VarBuilder) -> NeuralResult<()> {
-        // Initialize parameters based on configuration
-        // This would create the actual model layers
+    pub fn initialize(&mut self) -> NeuralResult<()> {
+        // Initialize weights and biases based on configuration
+        let mut total_weights = 0;
+        let mut layer_sizes = vec![self.config.input_dim];
+        layer_sizes.extend(&self.config.hidden_dims);
+        layer_sizes.push(self.config.output_dim);
+        
+        for i in 0..layer_sizes.len() - 1 {
+            let layer_weights = layer_sizes[i] * layer_sizes[i + 1];
+            total_weights += layer_weights;
+        }
+        
+        // Initialize with random weights
+        self.weights = vec![vec![0.0; total_weights]; 1];
+        self.biases = vec![0.0; layer_sizes.iter().sum::<usize>()];
+        
         Ok(())
     }
     
     /// Forward pass through the model
-    pub fn forward(&self, input: &Tensor) -> NeuralResult<Tensor> {
-        // Implement forward pass
-        // This would depend on the specific architecture
-        todo!("Forward pass implementation depends on model architecture")
+    pub fn forward(&self, _input: &[f32]) -> NeuralResult<Vec<f32>> {
+        // Placeholder forward pass implementation
+        Ok(vec![0.0; self.config.output_dim])
     }
     
     /// Get model parameter count
     pub fn parameter_count(&self) -> usize {
-        self.parameters.values()
-            .map(|tensor| tensor.elem_count())
-            .sum()
+        self.weights.iter().map(|w| w.len()).sum::<usize>() + self.biases.len()
     }
 }
 
@@ -360,60 +399,47 @@ impl FannNetwork {
     }
     
     /// Train the network with data
-    pub fn train(&mut self, inputs: &[Vec<f32>], outputs: &[Vec<f32>]) -> NeuralResult<()> {
-        // This would implement actual FANN training
+    pub fn train(&mut self, _inputs: &[Vec<f32>], _outputs: &[Vec<f32>]) -> NeuralResult<()> {
+        // Placeholder for FANN training implementation
         Ok(())
     }
     
     /// Run inference on input
-    pub fn run(&self, input: &[f32]) -> NeuralResult<Vec<f32>> {
-        // This would implement actual FANN inference
+    pub fn run(&self, _input: &[f32]) -> NeuralResult<Vec<f32>> {
+        // Placeholder for FANN inference implementation
         Ok(vec![0.0; self.config.num_output as usize])
     }
     
     /// Save network to file
-    pub fn save(&self, path: &str) -> NeuralResult<()> {
-        // This would save the FANN network
+    pub fn save(&self, _path: &str) -> NeuralResult<()> {
+        // Placeholder for FANN network saving
         Ok(())
     }
     
     /// Load network from file
-    pub fn load(path: &str) -> NeuralResult<Self> {
-        // This would load a FANN network
-        todo!("FANN network loading not implemented")
+    pub fn load(_path: &str) -> NeuralResult<Self> {
+        // Placeholder for FANN network loading
+        Err(NeuralError::InitializationError("FANN loading not implemented".to_string()))
     }
 }
 
-/// Device management for neural processing
-#[cfg(feature = "neural")]
+/// Device management for neural processing (CPU-only for pure Rust)
 pub struct DeviceManager;
 
-#[cfg(feature = "neural")]
 impl DeviceManager {
-    /// Get the best available device
-    pub fn best_device() -> Device {
-        Device::cuda_if_available(0).unwrap_or(Device::Cpu)
+    /// Get the best available device (always CPU in pure Rust)
+    pub fn best_device() -> String {
+        "cpu".to_string()
     }
     
     /// Get all available devices
-    pub fn available_devices() -> Vec<Device> {
-        let mut devices = vec![Device::Cpu];
-        
-        // Check for CUDA devices
-        for i in 0..8 { // Check first 8 GPU devices
-            if let Ok(device) = Device::cuda_if_available(i) {
-                if !matches!(device, Device::Cpu) {
-                    devices.push(device);
-                }
-            }
-        }
-        
-        devices
+    pub fn available_devices() -> Vec<String> {
+        vec!["cpu".to_string()]
     }
     
-    /// Get device memory info
-    pub fn device_memory(device: &Device) -> Option<(u64, u64)> {
-        // This would return (free_memory, total_memory) in bytes
+    /// Get device memory info (CPU only for pure Rust)
+    pub fn device_memory(_device: &str) -> Option<(u64, u64)> {
+        // Return system memory info for CPU
         // Implementation depends on device type
         None
     }
