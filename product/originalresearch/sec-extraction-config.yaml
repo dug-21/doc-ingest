@@ -1,0 +1,308 @@
+# SEC Document Extraction Configuration
+# Optimized for >99.5% financial accuracy
+
+extraction_config:
+  version: "1.0"
+  document_type: "SEC_FORMS"
+  supported_forms: ["10-K", "10-Q", "8-K", "DEF 14A", "S-1"]
+  
+  global_settings:
+    confidence_threshold: 0.85
+    financial_confidence_threshold: 0.95  # Higher for financial data
+    enable_validation: true
+    cross_reference_validation: true
+    output_format: "json"
+    preserve_layout: true
+    enable_audit_trail: true
+    
+  # Model-specific settings
+  model_settings:
+    layout_model:
+      name: "microsoft/layoutlmv3-base"
+      fine_tuned_checkpoint: "models/layoutlm-sec-finetuned"
+      use_financial_vocabulary: true
+    
+    financial_model:
+      name: "ProsusAI/finbert"
+      ensemble_with: ["yiyanghkust/finbert-tone", "ahmedrachid/FinancialBERT"]
+      confidence_aggregation: "weighted_average"
+    
+    relationship_model:
+      architecture: "transformer_graph"
+      pretrained: "models/sec-relationship-extractor-v2"
+      min_confidence: 0.9
+  
+  # Financial metrics extraction rules
+  extraction_rules:
+    # Revenue and Sales
+    - name: "revenue_metrics"
+      type: "table_extraction"
+      priority: "critical"
+      patterns:
+        - regex: "(?i)(net\s+)?(revenue|sales|turnover)"
+        - regex: "(?i)total\s+(revenue|sales)"
+        - semantic: "revenue_indicator"
+      value_patterns:
+        - regex: '\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|billion|M|B))?'
+        - regex: '[\d,]+(?:\.\d{2})?\s*(?:million|billion|M|B)'
+      context_requirements:
+        - must_have: ["fiscal year", "period ended", "three months", "twelve months"]
+        - proximity: 100  # tokens
+      validation:
+        - rule: "numeric_validation"
+          params: {allow_negative: false, require_currency: true}
+        - rule: "magnitude_check"
+          params: {min: 1000, max: 1000000000000}  # $1K to $1T
+        - rule: "period_consistency"
+          params: {compare_quarters: true, compare_years: true}
+    
+    # Earnings and Net Income
+    - name: "earnings_metrics"
+      type: "table_extraction"
+      priority: "critical"
+      patterns:
+        - regex: "(?i)net\s+(income|earnings|loss)"
+        - regex: "(?i)earnings?\s+per\s+share"
+        - regex: "(?i)diluted\s+eps"
+        - semantic: "earnings_indicator"
+      value_patterns:
+        - regex: '\$[\d,]+(?:\.\d{2})?'
+        - regex: '\(?\$[\d,]+(?:\.\d{2})?\)?'  # Handle negative values in parentheses
+      context_requirements:
+        - must_have: ["attributable to", "shareholders", "common stock"]
+        - exclude: ["non-controlling", "minority interest"]
+      validation:
+        - rule: "earnings_validation"
+          params: {allow_negative: true, check_eps_calculation: true}
+        - rule: "gaap_compliance"
+          params: {check_adjustments: true}
+    
+    # Balance Sheet Items
+    - name: "balance_sheet_items"
+      type: "table_extraction"
+      priority: "high"
+      patterns:
+        - regex: "(?i)total\s+assets?"
+        - regex: "(?i)total\s+liabilities"
+        - regex: "(?i)shareholders?\s+equity"
+        - regex: "(?i)cash\s+and\s+cash\s+equivalents"
+        - semantic: "balance_sheet_item"
+      context_requirements:
+        - must_have: ["as of", "balance sheet", "consolidated"]
+        - date_proximity: 50  # tokens from date
+      validation:
+        - rule: "balance_equation"
+          params: {tolerance: 0.01}  # Assets = Liabilities + Equity
+        - rule: "period_comparison"
+          params: {require_prior_period: true}
+    
+    # Cash Flow Items
+    - name: "cash_flow_metrics"
+      type: "section_extraction"
+      priority: "high"
+      section_identifiers:
+        - heading: "(?i)cash\s+flows?"
+        - heading: "(?i)statement\s+of\s+cash\s+flows"
+      patterns:
+        - regex: "(?i)operating\s+activities"
+        - regex: "(?i)investing\s+activities"
+        - regex: "(?i)financing\s+activities"
+        - regex: "(?i)free\s+cash\s+flow"
+      validation:
+        - rule: "cash_flow_reconciliation"
+          params: {check_total: true}
+    
+    # Management Discussion & Analysis
+    - name: "mda_extraction"
+      type: "section_extraction"
+      priority: "medium"
+      section_identifiers:
+        - heading: "(?i)management.s?\s+discussion"
+        - item_number: "Item 7"
+      extract:
+        - key_performance_indicators: true
+        - forward_looking_statements: true
+        - risk_factors: true
+        - trend_analysis: true
+      sub_patterns:
+        - name: "revenue_drivers"
+          patterns: ["(?i)revenue\s+(increased|decreased|grew|declined)"]
+        - name: "margin_analysis"
+          patterns: ["(?i)(gross|operating|net)\s+margin"]
+        - name: "guidance"
+          patterns: ["(?i)(expect|anticipate|project|forecast)"]
+      post_processing:
+        - sentiment_analysis: true
+        - entity_linking: true
+        - temporal_ordering: true
+    
+    # Risk Factors
+    - name: "risk_factors"
+      type: "section_extraction"
+      priority: "medium"
+      section_identifiers:
+        - heading: "(?i)risk\s+factors"
+        - item_number: "Item 1A"
+      extract:
+        - risk_categories: true
+        - risk_severity: true
+        - mitigation_strategies: true
+      categorization:
+        - operational_risks
+        - financial_risks
+        - regulatory_risks
+        - market_risks
+        - cybersecurity_risks
+    
+    # Corporate Relationships
+    - name: "corporate_structure"
+      type: "relationship_extraction"
+      priority: "high"
+      entity_types: ["company", "subsidiary", "joint_venture", "acquisition"]
+      relationship_types:
+        - owns: {min_ownership: 0.0, max_ownership: 1.0}
+        - controls: {voting_rights: true}
+        - subsidiary_of: {consolidation: true}
+        - acquired: {date_required: true, amount_required: true}
+        - merged_with: {effective_date: true}
+      context_window: 200
+      validation:
+        - cross_reference: true
+        - ownership_consistency: true
+        - temporal_consistency: true
+    
+    # Key Personnel
+    - name: "executive_compensation"
+      type: "table_extraction"
+      priority: "medium"
+      section_identifiers:
+        - heading: "(?i)executive\s+compensation"
+        - heading: "(?i)summary\s+compensation\s+table"
+      patterns:
+        - person_name: "(?i)^([A-Z][a-z]+\s+)+[A-Z][a-z]+"
+        - title: "(?i)(CEO|CFO|President|Director|Officer)"
+        - compensation: '\$[\d,]+'
+      validation:
+        - rule: "total_compensation_check"
+        - rule: "year_over_year_comparison"
+    
+    # Audit Information
+    - name: "audit_extraction"
+      type: "section_extraction"
+      priority: "high"
+      section_identifiers:
+        - heading: "(?i)report\s+of\s+independent"
+        - heading: "(?i)auditor.s?\s+report"
+      extract:
+        - auditor_name: true
+        - audit_opinion: true
+        - critical_audit_matters: true
+        - internal_controls_assessment: true
+      validation:
+        - rule: "auditor_independence"
+        - rule: "opinion_type_classification"
+
+  # Validation rules
+  validation_rules:
+    - name: "numeric_validation"
+      type: "format"
+      checks:
+        - numeric_format: true
+        - decimal_places: {min: 0, max: 2}
+        - thousand_separators: true
+    
+    - name: "period_consistency"
+      type: "temporal"
+      checks:
+        - quarter_sequence: true
+        - year_over_year: true
+        - cumulative_periods: true
+    
+    - name: "gaap_compliance"
+      type: "accounting"
+      checks:
+        - gaap_terms: true
+        - non_gaap_reconciliation: true
+        - adjustment_disclosure: true
+    
+    - name: "balance_equation"
+      type: "accounting"
+      formula: "assets = liabilities + equity"
+      tolerance: 0.01
+    
+    - name: "magnitude_check"
+      type: "reasonableness"
+      checks:
+        - industry_benchmarks: true
+        - historical_comparison: true
+        - peer_comparison: true
+
+  # Output formatting
+  output_configuration:
+    structure:
+      - financial_statements:
+          - income_statement
+          - balance_sheet
+          - cash_flow_statement
+      - key_metrics:
+          - revenue
+          - earnings
+          - margins
+          - ratios
+      - relationships:
+          - corporate_structure
+          - key_personnel
+      - risk_analysis:
+          - identified_risks
+          - risk_categories
+      - audit_information:
+          - auditor
+          - opinion
+          - critical_matters
+    
+    metadata:
+      - extraction_timestamp
+      - document_metadata
+      - confidence_scores
+      - validation_results
+      - processing_time
+      - model_versions
+    
+    format_options:
+      numbers:
+        - standardize_units: true  # Convert to millions/billions
+        - preserve_precision: true
+        - include_currency: true
+      dates:
+        - format: "YYYY-MM-DD"
+        - fiscal_period_notation: true
+      text:
+        - preserve_structure: true
+        - include_context: true
+        - highlight_extracted: true
+
+  # Performance optimization
+  performance:
+    batch_size: 16
+    max_workers: 8
+    gpu_inference: true
+    cache_embeddings: true
+    incremental_processing: true
+    
+  # Monitoring and alerts
+  monitoring:
+    accuracy_tracking:
+      - financial_values: {threshold: 0.995, alert: true}
+      - entities: {threshold: 0.98, alert: true}
+      - relationships: {threshold: 0.95, alert: false}
+    
+    performance_tracking:
+      - processing_speed: {target: "10 pages/second", alert: true}
+      - memory_usage: {max: "8GB", alert: true}
+      - gpu_utilization: {target: 0.8, alert: false}
+    
+    quality_metrics:
+      - extraction_completeness
+      - validation_pass_rate
+      - confidence_distribution
+      - error_analysis
