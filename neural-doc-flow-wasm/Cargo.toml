@@ -20,40 +20,24 @@ neural-doc-flow-sources = { path = "../neural-doc-flow-sources" }
 neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs" }
 neural-doc-flow-security = { path = "../neural-doc-flow-security" }
 
-# WASM dependencies
-wasm-bindgen = { workspace = true, features = ["serde-serialize"] }
-wasm-bindgen-futures.workspace = true
-js-sys.workspace = true
-web-sys = { workspace = true, features = [
-  "console",
-  "File",
-  "FileReader",
-  "Blob",
-  "ReadableStream",
-  "Headers",
-  "Request",
-  "Response",
-  "Window",
-  "WorkerGlobalScope",
-  "Url",
-  "UrlSearchParams"
-] }
+# Pure Rust WASM dependencies (no JavaScript runtime)
+# All JavaScript dependencies removed for architecture compliance
 
 # Core dependencies
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 futures.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
-chrono = { workspace = true, features = ["serde", "wasm-bindgen"] }
+chrono = { workspace = true, features = ["serde"] }
 anyhow.workspace = true
 thiserror.workspace = true
 
 # WASM-specific utilities
-console_error_panic_hook.workspace = true
+console_error_panic_hook = { workspace = true, optional = true }
 wee_alloc = { workspace = true, optional = true }
 
-# Optional features for different environments
-getrandom = { version = "0.2", features = ["js"] }
+# Pure Rust random generation (no JavaScript)
+getrandom = { version = "0.2", features = ["rdrand"] }
 
 [dependencies.tokio]
 workspace = true
@@ -70,4 +54,4 @@ wasm-opt = ["-Oz", "--enable-mutable-globals"]
 wasm-opt = false
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3"
+# wasm-bindgen-test removed - JavaScript dependency violation
