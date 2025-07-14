@@ -1,0 +1,61 @@
+[package]
+name = "neural-doc-flow-python"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Python bindings for neural document processing framework"
+license.workspace = true
+keywords = ["python", "bindings", "document", "neural", "processing"]
+categories = ["text-processing", "api-bindings"]
+
+[lib]
+name = "neuraldocflow"
+crate-type = ["cdylib"]
+
+[dependencies]
+# PyO3 for Python bindings
+pyo3 = { version = "0.20", features = ["extension-module", "abi3-py38"] }
+
+# Async support for PyO3 (use compatible version)
+pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
+
+# Core workspace dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+neural-doc-flow-security = { path = "../neural-doc-flow-security" }
+neural-doc-flow-plugins = { path = "../neural-doc-flow-plugins" }
+neural-doc-flow-processors = { path = "../neural-doc-flow-processors" }
+neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization for Python
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[build-dependencies]
+# For building Python extensions
+pyo3-build-config = "0.20"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[features]
+default = ["neural", "security", "plugins"]
+neural = ["neural-doc-flow-processors/neural"]
+security = ["neural-doc-flow-security/default"]
+plugins = ["neural-doc-flow-plugins/default"]
+
+# Python extension features
+abi3 = ["pyo3/abi3"]

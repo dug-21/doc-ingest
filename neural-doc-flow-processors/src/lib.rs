@@ -12,6 +12,13 @@ use neural_doc_flow_core::{Document, NeuralResult, NeuralError};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
+// SIMD optimization modules
+#[cfg(feature = "simd")]
+pub mod simd_optimizer_enhanced;
+
+// Memory optimization modules
+pub mod memory_optimized;
+
 /// Basic neural processor implementation
 pub struct BasicNeuralProcessor {
     name: String,

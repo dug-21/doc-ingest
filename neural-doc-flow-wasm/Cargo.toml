@@ -1,0 +1,70 @@
+[package]
+name = "neural-doc-flow-wasm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "WebAssembly bindings for neural document processing"
+license.workspace = true
+repository.workspace = true
+keywords = ["wasm", "document", "neural", "processing", "web"]
+categories = ["wasm", "text-processing", "web-programming"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Workspace dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+neural-doc-flow-processors = { path = "../neural-doc-flow-processors" }
+neural-doc-flow-sources = { path = "../neural-doc-flow-sources" }
+neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs" }
+neural-doc-flow-security = { path = "../neural-doc-flow-security" }
+
+# WASM dependencies
+wasm-bindgen = { workspace = true, features = ["serde-serialize"] }
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+web-sys = { workspace = true, features = [
+  "console",
+  "File",
+  "FileReader",
+  "Blob",
+  "ReadableStream",
+  "Headers",
+  "Request",
+  "Response",
+  "Window",
+  "WorkerGlobalScope",
+  "Url",
+  "UrlSearchParams"
+] }
+
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+futures.workspace = true
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde", "wasm-bindgen"] }
+anyhow.workspace = true
+thiserror.workspace = true
+
+# WASM-specific utilities
+console_error_panic_hook.workspace = true
+wee_alloc = { workspace = true, optional = true }
+
+# Optional features for different environments
+getrandom = { version = "0.2", features = ["js"] }
+
+[dependencies.tokio]
+workspace = true
+features = ["macros", "sync", "time"]
+
+[features]
+default = ["console_error_panic_hook"]
+wee_alloc = ["dep:wee_alloc"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals"]
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false

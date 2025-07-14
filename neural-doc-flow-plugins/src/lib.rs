@@ -11,6 +11,9 @@ pub mod manager;
 pub mod discovery;
 pub mod sandbox;
 pub mod registry;
+pub mod signature;
+pub mod sdk;
+pub mod builtin;
 
 use neural_doc_flow_core::{DocumentSource, ProcessingError};
 use serde::{Deserialize, Serialize};
@@ -66,6 +69,13 @@ pub use manager::PluginManager;
 /// Create plugin manager with default configuration
 pub fn create_plugin_manager() -> Result<PluginManager, ProcessingError> {
     PluginManager::new(PluginConfig::default())
+}
+
+/// Create plugin manager with built-in plugins registered
+pub async fn create_plugin_manager_with_builtins() -> Result<PluginManager, ProcessingError> {
+    let mut manager = PluginManager::new(PluginConfig::default())?;
+    builtin::register_builtin_plugins(&mut manager).await?;
+    Ok(manager)
 }
 
 /// Plugin system configuration

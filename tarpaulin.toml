@@ -1,0 +1,56 @@
+# Tarpaulin Configuration for Phase 3 Coverage Testing
+# Quality Engineer Agent - Comprehensive Coverage >85%
+
+[report]
+# Output formats
+out = ["Html", "Lcov", "Json"]
+output-dir = "target/coverage"
+
+[run]
+# Coverage configuration
+all-features = true
+all-targets = true
+follow-exec = true
+post-args = "--nocapture"
+timeout = 600
+verbose = true
+
+# Include test coverage
+run-types = ["Tests", "Doctests"]
+include-tests = true
+
+# Engine configuration  
+engine = "llvm"
+release = false
+
+# Coverage scope
+workspace = true
+exclude-files = [
+    "target/*",
+    "*/tests/*",
+    "*/benches/*",
+    "*/examples/*",
+    "fuzz/*",
+]
+
+# Thresholds for Phase 3
+fail-under = 85.0
+
+[html]
+# HTML report configuration
+output-dir = "target/coverage"
+
+[coverage]
+# Coverage calculation
+branch = true
+line = true
+function = true
+
+# Exclusions
+ignore-panics = true
+ignore-tests = false
+
+[instrumentation]
+# LLVM instrumentation options
+llvm-version = "auto"
+profile = true

@@ -13,6 +13,18 @@ pub mod result;
 pub mod config;
 pub mod engine;
 
+// Memory optimization modules
+pub mod memory;
+pub mod optimized_types;
+pub mod memory_profiler;
+
+// Integration testing module
+pub mod test_integration;
+
+// SIMD optimization modules
+#[cfg(feature = "simd")]
+pub mod simd_document_processor;
+
 // Re-export specific items to avoid conflicts
 pub use traits::{DocumentSource, DocumentSourceFactory, ProcessorPipeline, Processor, 
                 OutputFormatter, TemplateFormatter, NeuralProcessor, NeuralProcessorFactory};
@@ -20,6 +32,8 @@ pub use types::*;
 pub use error::*;
 pub use document::*;
 pub use result::*;
+pub use memory::*;
+pub use optimized_types::*;
 
 // Re-export config items with specific names to avoid conflicts
 pub use config::{NeuralDocFlowConfig, SystemConfig, SourcesConfig, OutputConfig, 

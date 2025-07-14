@@ -24,6 +24,9 @@ pub struct NeuralDocFlowConfig {
     /// Output formatting configuration
     pub output: OutputConfig,
     
+    /// Security configuration
+    pub security: SecurityConfig,
+    
     /// Monitoring and metrics configuration
     pub monitoring: MonitoringConfig,
     
@@ -857,6 +860,306 @@ pub enum RotationPeriod {
     SizeOnly,
 }
 
+/// Security configuration for the system
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SecurityConfig {
+    /// Enable security scanning
+    pub enabled: bool,
+    
+    /// Security scanning mode
+    pub scan_mode: SecurityScanMode,
+    
+    /// Threat detection configuration
+    pub threat_detection: ThreatDetectionConfig,
+    
+    /// Sandbox configuration
+    pub sandboxing: SandboxConfig,
+    
+    /// Audit configuration
+    pub audit: AuditConfig,
+    
+    /// Security policies
+    pub policies: SecurityPolicies,
+}
+
+/// Security scanning modes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SecurityScanMode {
+    /// Disabled - no security scanning
+    Disabled,
+    
+    /// Basic - heuristic-based scanning only
+    Basic,
+    
+    /// Standard - neural + heuristic scanning
+    Standard,
+    
+    /// Comprehensive - full neural analysis with behavioral detection
+    Comprehensive,
+    
+    /// Custom - user-defined security scanning rules
+    Custom(String),
+}
+
+/// Threat detection configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThreatDetectionConfig {
+    /// Enable malware detection
+    pub malware_detection: bool,
+    
+    /// Enable behavioral analysis
+    pub behavioral_analysis: bool,
+    
+    /// Enable anomaly detection
+    pub anomaly_detection: bool,
+    
+    /// Threat confidence threshold (0.0 to 1.0)
+    pub confidence_threshold: f32,
+    
+    /// Neural model configuration for threat detection
+    pub neural_models: HashMap<String, ModelConfig>,
+    
+    /// Custom threat patterns
+    pub custom_patterns: Vec<ThreatPattern>,
+}
+
+/// Custom threat pattern definition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThreatPattern {
+    /// Pattern name
+    pub name: String,
+    
+    /// Pattern type (regex, substring, neural, etc.)
+    pub pattern_type: String,
+    
+    /// Pattern rule
+    pub rule: String,
+    
+    /// Threat severity for this pattern
+    pub severity: ThreatSeverity,
+    
+    /// Action to take when pattern matches
+    pub action: SecurityAction,
+}
+
+/// Threat severity levels
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ThreatSeverity {
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+/// Security actions to take
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SecurityAction {
+    /// Allow processing to continue
+    Allow,
+    
+    /// Sanitize content and continue
+    Sanitize,
+    
+    /// Quarantine document for review
+    Quarantine,
+    
+    /// Block document processing
+    Block,
+    
+    /// Custom action
+    Custom(String),
+}
+
+/// Sandbox configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SandboxConfig {
+    /// Enable sandboxing for plugin execution
+    pub enabled: bool,
+    
+    /// Sandbox type (process, container, etc.)
+    pub sandbox_type: SandboxType,
+    
+    /// Resource limits for sandboxed execution
+    pub resource_limits: SandboxResourceLimits,
+    
+    /// Network access policy
+    pub network_policy: NetworkPolicy,
+    
+    /// Filesystem access policy
+    pub filesystem_policy: FilesystemPolicy,
+}
+
+/// Sandbox implementation types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SandboxType {
+    /// Process-based sandboxing
+    Process,
+    
+    /// Container-based sandboxing
+    Container,
+    
+    /// Virtual machine sandboxing
+    VM,
+    
+    /// Custom sandbox implementation
+    Custom(String),
+}
+
+/// Sandbox resource limits
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SandboxResourceLimits {
+    /// Maximum memory in MB
+    pub max_memory_mb: u64,
+    
+    /// Maximum CPU percent
+    pub max_cpu_percent: f32,
+    
+    /// Maximum execution time in seconds
+    pub max_execution_time_seconds: u64,
+    
+    /// Maximum file operations per second
+    pub max_file_ops_per_second: u32,
+}
+
+/// Network access policies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum NetworkPolicy {
+    /// No network access allowed
+    None,
+    
+    /// Limited access to specific hosts
+    Restricted(Vec<String>),
+    
+    /// Full network access
+    Full,
+    
+    /// Custom network policy
+    Custom(String),
+}
+
+/// Filesystem access policies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum FilesystemPolicy {
+    /// No filesystem access
+    None,
+    
+    /// Read-only access to specific paths
+    ReadOnly(Vec<String>),
+    
+    /// Read-write access to specific paths
+    ReadWrite(Vec<String>),
+    
+    /// Full filesystem access
+    Full,
+    
+    /// Custom filesystem policy
+    Custom(String),
+}
+
+/// Audit configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditConfig {
+    /// Enable security audit logging
+    pub enabled: bool,
+    
+    /// Audit log level
+    pub log_level: AuditLogLevel,
+    
+    /// Audit log destination
+    pub log_destination: AuditLogDestination,
+    
+    /// Log retention period in days
+    pub retention_days: u32,
+    
+    /// Include sensitive data in logs
+    pub include_sensitive_data: bool,
+    
+    /// Audit event types to log
+    pub logged_events: Vec<AuditEventType>,
+}
+
+/// Audit log levels
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AuditLogLevel {
+    /// Log all security events
+    All,
+    
+    /// Log threats and errors only
+    ThreatsAndErrors,
+    
+    /// Log errors only
+    ErrorsOnly,
+    
+    /// Custom log level
+    Custom(Vec<String>),
+}
+
+/// Audit log destinations
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AuditLogDestination {
+    /// File-based logging
+    File(PathBuf),
+    
+    /// Syslog
+    Syslog,
+    
+    /// Remote logging server
+    Remote(String),
+    
+    /// Custom destination
+    Custom(String),
+}
+
+/// Types of security events to audit
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AuditEventType {
+    /// Security scan started
+    ScanStart,
+    
+    /// Security scan completed
+    ScanComplete,
+    
+    /// Threat detected
+    ThreatDetected,
+    
+    /// Document quarantined
+    DocumentQuarantined,
+    
+    /// Document blocked
+    DocumentBlocked,
+    
+    /// Plugin sandboxed
+    PluginSandboxed,
+    
+    /// Security policy violation
+    PolicyViolation,
+    
+    /// Custom event type
+    Custom(String),
+}
+
+/// Security policies configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SecurityPolicies {
+    /// Maximum file size for processing (in MB)
+    pub max_file_size_mb: u64,
+    
+    /// Allowed file types (MIME types)
+    pub allowed_file_types: Vec<String>,
+    
+    /// Blocked file types (MIME types)
+    pub blocked_file_types: Vec<String>,
+    
+    /// Require secure source validation
+    pub require_source_validation: bool,
+    
+    /// Enable content encryption at rest
+    pub encrypt_content_at_rest: bool,
+    
+    /// Security action overrides for specific conditions
+    pub action_overrides: HashMap<String, SecurityAction>,
+}
+
 // Default implementations
 
 impl Default for NeuralDocFlowConfig {
@@ -867,6 +1170,7 @@ impl Default for NeuralDocFlowConfig {
             pipeline: PipelineConfig::default(),
             neural: NeuralConfig::default(),
             output: OutputConfig::default(),
+            security: SecurityConfig::default(),
             monitoring: MonitoringConfig::default(),
             extensions: HashMap::new(),
         }
@@ -1075,6 +1379,98 @@ impl Default for LoggingConfig {
             format: LogFormat::Text,
             outputs: vec![LogOutput::Stdout],
             rotation: None,
+        }
+    }
+}
+
+impl Default for SecurityConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            scan_mode: SecurityScanMode::Standard,
+            threat_detection: ThreatDetectionConfig::default(),
+            sandboxing: SandboxConfig::default(),
+            audit: AuditConfig::default(),
+            policies: SecurityPolicies::default(),
+        }
+    }
+}
+
+impl Default for ThreatDetectionConfig {
+    fn default() -> Self {
+        Self {
+            malware_detection: true,
+            behavioral_analysis: true,
+            anomaly_detection: true,
+            confidence_threshold: 0.7,
+            neural_models: HashMap::new(),
+            custom_patterns: Vec::new(),
+        }
+    }
+}
+
+impl Default for SandboxConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            sandbox_type: SandboxType::Process,
+            resource_limits: SandboxResourceLimits::default(),
+            network_policy: NetworkPolicy::None,
+            filesystem_policy: FilesystemPolicy::ReadOnly(vec!["/tmp".to_string()]),
+        }
+    }
+}
+
+impl Default for SandboxResourceLimits {
+    fn default() -> Self {
+        Self {
+            max_memory_mb: 1024,
+            max_cpu_percent: 50.0,
+            max_execution_time_seconds: 300,
+            max_file_ops_per_second: 100,
+        }
+    }
+}
+
+impl Default for AuditConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            log_level: AuditLogLevel::ThreatsAndErrors,
+            log_destination: AuditLogDestination::File(PathBuf::from("./security-audit.log")),
+            retention_days: 90,
+            include_sensitive_data: false,
+            logged_events: vec![
+                AuditEventType::ThreatDetected,
+                AuditEventType::DocumentQuarantined,
+                AuditEventType::DocumentBlocked,
+                AuditEventType::PolicyViolation,
+            ],
+        }
+    }
+}
+
+impl Default for SecurityPolicies {
+    fn default() -> Self {
+        Self {
+            max_file_size_mb: 100,
+            allowed_file_types: vec![
+                "application/pdf".to_string(),
+                "text/plain".to_string(),
+                "text/html".to_string(),
+                "application/json".to_string(),
+                "application/xml".to_string(),
+                "text/xml".to_string(),
+                "text/markdown".to_string(),
+            ],
+            blocked_file_types: vec![
+                "application/x-executable".to_string(),
+                "application/x-msdos-program".to_string(),
+                "application/x-msdownload".to_string(),
+            ],
+            require_source_validation: true,
+            encrypt_content_at_rest: false,
+            action_overrides: HashMap::new(),
         }
     }
 }

@@ -33,6 +33,10 @@ pub enum NeuralDocFlowError {
     #[error("Serialization error: {0}")]
     SerializationError(#[from] serde_json::Error),
 
+    /// Memory management errors
+    #[error("Memory error: {message}")]
+    MemoryError { message: String },
+
     /// Generic errors
     #[error("Internal error: {0}")]
     Internal(#[from] anyhow::Error),
@@ -95,6 +99,30 @@ pub enum ProcessingError {
 
     #[error("Sandbox error: {0}")]
     SandboxError(String),
+
+    #[error("Model creation error: {0}")]
+    ModelCreation(String),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+
+    #[error("Prediction error: {0}")]
+    Prediction(String),
+
+    #[error("Training error: {0}")]
+    Training(String),
+
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    #[error("Serialization error: {0}")]
+    Serialization(String),
+
+    #[error("Deserialization error: {0}")]
+    Deserialization(String),
+
+    #[error("Security violation: {0}")]
+    SecurityViolation(String),
 }
 
 /// Neural processing specific errors

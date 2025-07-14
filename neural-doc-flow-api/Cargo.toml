@@ -1,0 +1,96 @@
+[package]
+name = "neural-doc-flow-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "REST API server for neural document processing"
+license.workspace = true
+repository.workspace = true
+keywords = ["api", "rest", "document", "neural", "processing"]
+categories = ["web-programming", "text-processing"]
+
+[[bin]]
+name = "neural-doc-api-server"
+path = "src/bin/server.rs"
+
+[dependencies]
+# Workspace dependencies
+neural-doc-flow-core = { path = "../neural-doc-flow-core" }
+neural-doc-flow-processors = { path = "../neural-doc-flow-processors" }
+neural-doc-flow-sources = { path = "../neural-doc-flow-sources" }
+neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs" }
+neural-doc-flow-security = { path = "../neural-doc-flow-security" }
+neural-doc-flow-coordination = { path = "../neural-doc-flow-coordination" }
+
+# Web server framework
+axum.workspace = true
+tower.workspace = true
+tower-http = { workspace = true, features = ["cors", "trace", "timeout", "compression-gzip", "fs"] }
+hyper.workspace = true
+http.workspace = true
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+tokio-util.workspace = true
+
+# Serialization and validation
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+validator = { workspace = true, features = ["derive"] }
+
+# API documentation
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true
+
+# Authentication and security
+jsonwebtoken.workspace = true
+argon2.workspace = true
+base64.workspace = true
+
+# File handling
+multipart.workspace = true
+
+# Database (for job tracking and user management)
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+
+# Core utilities
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde"] }
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging and tracing
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+
+# Configuration
+config = "0.14"
+clap = { version = "4.0", features = ["derive", "env"] }
+
+# Rate limiting
+governor = "0.6"
+
+# Metrics
+metrics.workspace = true
+prometheus.workspace = true
+
+# Background job processing
+tokio-cron-scheduler = "0.9"
+
+# Additional utilities
+futures.workspace = true
+bytes = "1.5"
+mime = "0.3"
+mime_guess = "2.0"
+
+[dev-dependencies]
+tempfile.workspace = true
+test-log.workspace = true
+reqwest = { version = "0.11", features = ["json", "multipart"] }
+tokio-test = "0.4"
+
+[features]
+default = ["security", "metrics"]
+security = []
+metrics = ["prometheus"]
+swagger-ui = []

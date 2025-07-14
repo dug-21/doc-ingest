@@ -36,6 +36,9 @@
 /// Source trait definitions and common types
 pub mod traits;
 
+/// Streaming sources for memory optimization
+pub mod streaming;
+
 /// Source plugin manager
 pub mod manager;
 

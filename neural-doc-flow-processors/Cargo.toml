@@ -34,8 +34,9 @@ rayon = { version = "1.7", optional = true }
 crossbeam = { version = "0.8", optional = true }
 parking_lot = { version = "0.12", optional = true }
 
-# SIMD dependencies
+# SIMD dependencies  
 wide = { version = "0.7", optional = true }
+bytemuck = { version = "1.13", optional = true }
 
 # Neural processing dependencies - Pure Rust with ruv-FANN
 ruv-fann = { version = "0.1.6", optional = true }
@@ -47,7 +48,7 @@ metrics = { version = "0.21", optional = true }
 default = ["performance"]
 performance = ["rayon", "parking_lot", "crossbeam"]
 neural = ["ruv-fann"]
-simd = ["wide"]
+simd = ["wide", "bytemuck"]
 monitoring = ["metrics"]
 
 [lib]

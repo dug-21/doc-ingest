@@ -33,6 +33,10 @@ pub enum SourceCapability {
     MetadataExtraction,
     /// Can extract embedded resources
     ResourceExtraction,
+    /// Can perform security validation on sources
+    SecurityValidation,
+    /// Can scan for malware before processing
+    MalwareScanning,
 }
 
 /// Source metadata for plugin registration
@@ -63,6 +67,10 @@ pub struct SourceConfig {
     pub extract_metadata: bool,
     /// Whether to extract embedded resources
     pub extract_resources: bool,
+    /// Enable security validation before processing
+    pub enable_security_validation: bool,
+    /// Security scan timeout in seconds
+    pub security_scan_timeout: Option<u64>,
     /// Custom configuration options
     pub custom: HashMap<String, serde_json::Value>,
 }
@@ -74,6 +82,8 @@ impl Default for SourceConfig {
             encoding: None,
             extract_metadata: true,
             extract_resources: false,
+            enable_security_validation: true,
+            security_scan_timeout: Some(30), // 30 seconds default
             custom: HashMap::new(),
         }
     }
@@ -93,6 +103,41 @@ pub trait BaseDocumentSource: DocumentSource {
     
     /// Update the configuration
     fn set_config(&mut self, config: SourceConfig);
+    
+    /// Perform security validation on the source before processing
+    async fn validate_security(&self, input: &str) -> SourceResult<bool> {
+        // Default implementation - can be overridden by sources
+        if self.config().enable_security_validation {
+            // Basic security checks
+            self.basic_security_validation(input).await
+        } else {
+            Ok(true)
+        }
+    }
+    
+    /// Basic security validation (can be overridden)
+    async fn basic_security_validation(&self, input: &str) -> SourceResult<bool> {
+        // Check for obvious security issues
+        if input.contains("javascript:") 
+           || input.contains("vbscript:") 
+           || input.contains("data:text/html") {
+            return Ok(false);
+        }
+        
+        // Check file size if it's a file path
+        if let Ok(metadata) = tokio::fs::metadata(input).await {
+            if let Some(max_size) = self.config().max_file_size {
+                if metadata.len() as usize > max_size {
+                    return Err(SourceError::FileTooLarge {
+                        size: metadata.len() as usize,
+                        max: max_size,
+                    });
+                }
+            }
+        }
+        
+        Ok(true)
+    }
 }
 
 /// Error types specific to source operations
@@ -118,6 +163,9 @@ pub enum SourceError {
     
     #[error("Configuration error: {0}")]
     ConfigError(String),
+    
+    #[error("Security validation failed: {0}")]
+    SecurityValidationFailed(String),
 }
 
 /// Result type for source operations

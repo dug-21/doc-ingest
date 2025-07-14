@@ -46,9 +46,11 @@ aho-corasick = { workspace = true }
 
 # Memory and performance
 ndarray = { workspace = true, optional = true }
+bytes = { workspace = true }
 
 # Unix/Linux system utilities (for sandboxing, optional)
 nix = { workspace = true, optional = true }
+
 
 [dev-dependencies]
 criterion = { workspace = true }
@@ -57,6 +59,7 @@ tempfile = { workspace = true }
 test-log = { workspace = true }
 pretty_assertions = { workspace = true }
 tokio-test = "0.4"
+tracing-subscriber = "0.3"
 
 [features]
 default = ["performance"]
@@ -75,6 +78,7 @@ neural = ["simd"]
 
 # Sandbox support (Unix/Linux only)
 sandbox = ["nix"]
+
 
 # Benchmarks temporarily disabled until bench files are created
 # [[bench]]

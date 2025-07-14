@@ -10,6 +10,11 @@ pub mod detection;
 pub mod sandbox;
 pub mod analysis;
 pub mod audit;
+pub mod models;
+
+// SIMD optimization modules
+#[cfg(feature = "simd")]
+pub mod simd_security_optimizer;
 
 use neural_doc_flow_core::{Document, ProcessingError};
 use serde::{Deserialize, Serialize};
@@ -20,7 +25,7 @@ use tokio::sync::Mutex;
 pub struct SecurityProcessor {
     malware_detector: Arc<Mutex<detection::MalwareDetector>>,
     threat_analyzer: Arc<analysis::ThreatAnalyzer>,
-    sandbox_manager: Arc<sandbox::SandboxManager>,
+    sandbox_manager: Arc<Mutex<sandbox::SandboxManager>>,
     audit_logger: Arc<audit::AuditLogger>,
 }
 
@@ -80,7 +85,7 @@ impl SecurityProcessor {
         Ok(Self {
             malware_detector: Arc::new(Mutex::new(detection::MalwareDetector::new()?)),
             threat_analyzer: Arc::new(analysis::ThreatAnalyzer::new()?),
-            sandbox_manager: Arc::new(sandbox::SandboxManager::new()?),
+            sandbox_manager: Arc::new(Mutex::new(sandbox::SandboxManager::new()?)),
             audit_logger: Arc::new(audit::AuditLogger::new()?),
         })
     }
