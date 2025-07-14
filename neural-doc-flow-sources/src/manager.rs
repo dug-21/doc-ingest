@@ -222,8 +222,9 @@ mod tests {
     
     #[async_trait]
     impl DocumentSource for MockSource {
-        async fn process(&self, _input: Document) -> Result<Document> {
-            unimplemented!()
+        async fn process(&self, input: Document) -> Result<Document> {
+            // Mock implementation returns the input unchanged
+            Ok(input)
         }
     }
     

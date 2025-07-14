@@ -68,3 +68,6 @@ wasm-opt = ["-Oz", "--enable-mutable-globals"]
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"

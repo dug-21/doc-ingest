@@ -33,6 +33,7 @@ metrics = { version = "0.21", optional = true }
 # Additional dependencies for agents
 lru = "0.12"
 rand = "0.8"
+md5 = "0.7"
 
 [features]
 default = []

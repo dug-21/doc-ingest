@@ -24,7 +24,7 @@ pub struct MemoryPool {
 }
 
 /// Memory pool statistics
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PoolStats {
     pub allocations: u64,
     pub deallocations: u64,
@@ -114,7 +114,7 @@ impl MemoryPool {
     
     /// Get memory pool statistics
     pub fn stats(&self) -> PoolStats {
-        self.stats.read().clone()
+        (*self.stats.read()).clone()
     }
     
     /// Clear all pools and reset statistics
@@ -547,6 +547,7 @@ pub struct OptimizedBuilderStats {
 }
 
 /// Memory monitor for tracking system-wide memory usage
+#[derive(Debug)]
 pub struct MemoryMonitor {
     allocations: Arc<Mutex<HashMap<Uuid, usize>>>,
     total_allocated: Arc<Mutex<usize>>,

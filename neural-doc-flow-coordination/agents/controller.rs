@@ -225,6 +225,62 @@ impl ControllerAgent {
     pub fn get_coordination_stats(&self) -> &CoordinationStats {
         &self.coordination_stats
     }
+    
+    /// Process task queue for execution
+    pub async fn process_task_queue(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut processed_tasks = Vec::new();
+        
+        while let Some(task) = self.task_queue.pop() {
+            match task.task_type {
+                TaskType::DocumentExtraction => {
+                    // Would coordinate with ExtractorAgent
+                    let result = self.process_with_neural_enhancement(vec![]).await?;
+                    processed_tasks.push((task, result));
+                }
+                TaskType::TextEnhancement => {
+                    // Would coordinate with EnhancerAgent
+                    let result = self.enhance_text_quality(vec![]).await?;
+                    processed_tasks.push((task, result));
+                }
+                TaskType::LayoutAnalysis => {
+                    // Would coordinate with AnalyzerAgent
+                    let result = self.analyze_layout_structure(vec![]).await?;
+                    processed_tasks.push((task, result));
+                }
+                TaskType::QualityAssessment => {
+                    // Would coordinate with ValidatorAgent
+                    let quality_score = self.assess_quality(&[]).await?;
+                    if quality_score < 0.99 {
+                        // Re-process if quality is below 99%
+                        let result = self.re_process_for_quality(vec![]).await?;
+                        processed_tasks.push((task, result));
+                    }
+                }
+                _ => {}
+            }
+        }
+        
+        // Update coordination stats
+        for (task, _result) in processed_tasks {
+            self.coordination_stats.tasks_completed += 1;
+        }
+        
+        Ok(())
+    }
+    
+    /// Aggregate task result from agent
+    pub async fn aggregate_task_result(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+        // In a real implementation, this would deserialize the result and aggregate it
+        eprintln!("Aggregating task result from agent {}", message.from);
+        Ok(())
+    }
+    
+    /// Update agent health status
+    pub async fn update_agent_health(&mut self, agent_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+        eprintln!("Updating health status for agent {}", agent_id);
+        // In a real implementation, this would update agent health metrics
+        Ok(())
+    }
 }
 
 #[async_trait::async_trait]
@@ -260,15 +316,29 @@ impl DaaAgent for ControllerAgent {
     async fn coordinate(&mut self, _message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
         match _message.message_type {
             MessageType::Task => {
-                // Handle task assignment
+                // Handle task assignment - deserialize task from payload
+                if let Ok(task) = serde_json::from_slice::<ProcessingTask>(&_message.payload) {
+                    eprintln!("Controller received task: {:?}", task.task_type);
+                    self.schedule_task(task).await?;
+                    self.process_task_queue().await?;
+                }
             }
             MessageType::Status => {
                 // Handle status updates from other agents
+                eprintln!("Controller received status update from agent {}", _message.from);
             }
             MessageType::Result => {
                 // Handle results from other agents
+                eprintln!("Controller received result from agent {}", _message.from);
+                self.aggregate_task_result(_message).await?;
             }
-            _ => {}
+            MessageType::Heartbeat => {
+                // Update agent health status
+                self.update_agent_health(_message.from).await?;
+            }
+            _ => {
+                eprintln!("Controller received unknown message type: {:?}", _message.message_type);
+            }
         }
         Ok(())
     }

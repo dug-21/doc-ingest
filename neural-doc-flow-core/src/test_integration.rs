@@ -108,12 +108,12 @@ pub fn test_plugin_simulation() -> Result<(), String> {
 
 /// Run all integration tests
 pub fn run_all_tests() -> (usize, usize, Vec<String>) {
-    let tests = vec![
-        ("Basic Functionality", test_basic_functionality),
-        ("Memory Usage", test_memory_usage),
-        ("Neural Simulation", test_neural_simulation),
-        ("Security Validation", test_security_validation),
-        ("Plugin Simulation", test_plugin_simulation),
+    let tests: Vec<(&str, fn() -> Result<(), String>)> = vec![
+        ("Basic Functionality", test_basic_functionality as fn() -> Result<(), String>),
+        ("Memory Usage", test_memory_usage as fn() -> Result<(), String>),
+        ("Neural Simulation", test_neural_simulation as fn() -> Result<(), String>),
+        ("Security Validation", test_security_validation as fn() -> Result<(), String>),
+        ("Plugin Simulation", test_plugin_simulation as fn() -> Result<(), String>),
     ];
 
     let mut passed = 0;

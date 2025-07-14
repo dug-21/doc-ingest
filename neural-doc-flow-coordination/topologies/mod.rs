@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
+pub mod builder;
+pub use builder::{TopologyBuilder, TopologyConfig as BuilderConfig, TopologyStats};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TopologyType {
     Star,

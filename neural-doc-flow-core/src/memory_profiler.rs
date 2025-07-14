@@ -370,7 +370,7 @@ impl MemoryProfiler {
         MemoryReport {
             timestamp: Utc::now(),
             current_usage,
-            usage_by_type,
+            usage_by_type: usage_by_type.clone(),
             usage_by_document,
             potential_leaks: leaks,
             statistics: stats,
@@ -425,8 +425,10 @@ impl MemoryProfiler {
         // Simple interval-based snapshots
         // In a real implementation, this would use a timer
         let history = self.history.lock();
-        let should_snapshot = history.is_empty() || 
-            history.back().unwrap().timestamp.elapsed() > self.config.snapshot_interval;
+        let should_snapshot = history.is_empty() || {
+            let elapsed = Utc::now() - history.back().unwrap().timestamp;
+            elapsed.num_seconds() as u64 > self.config.snapshot_interval.as_secs()
+        };
         drop(history);
         
         if should_snapshot {

@@ -5,8 +5,8 @@
 
 use crate::memory::*;
 use crate::types::*;
-use crate::error::{Result, NeuralDocFlowError};
-use bytes::{Bytes, BytesMut};
+use crate::error::{Result, NeuralDocFlowError, ProcessingError};
+use bytes::Bytes;
 use std::sync::{Arc, Weak};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -14,6 +14,85 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use parking_lot::Mutex;
+
+/// Serde wrapper for Arc<str> serialization
+mod arc_str_serde {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::sync::Arc;
+    
+    pub fn serialize<S>(arc: &Arc<str>, s: S) -> std::result::Result<S::Ok, S::Error>
+    where S: Serializer {
+        s.serialize_str(arc)
+    }
+    
+    pub fn deserialize<'de, D>(d: D) -> std::result::Result<Arc<str>, D::Error>
+    where D: Deserializer<'de> {
+        String::deserialize(d).map(Arc::from)
+    }
+}
+
+/// Serde wrapper for Option<Arc<str>> serialization
+mod option_arc_str_serde {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::sync::Arc;
+    
+    pub fn serialize<S>(opt: &Option<Arc<str>>, s: S) -> std::result::Result<S::Ok, S::Error>
+    where S: Serializer {
+        match opt {
+            Some(arc) => s.serialize_some(&**arc),
+            None => s.serialize_none(),
+        }
+    }
+    
+    pub fn deserialize<'de, D>(d: D) -> std::result::Result<Option<Arc<str>>, D::Error>
+    where D: Deserializer<'de> {
+        let opt_string: Option<String> = Option::deserialize(d)?;
+        Ok(opt_string.map(|s| Arc::from(s.as_str())))
+    }
+}
+
+/// Helper function to serialize Vec<Arc<str>>
+fn serialize_arc_str_vec<S>(vec: &Vec<Arc<str>>, s: S) -> std::result::Result<S::Ok, S::Error>
+where S: serde::Serializer {
+    use serde::ser::SerializeSeq;
+    let mut seq = s.serialize_seq(Some(vec.len()))?;
+    for arc in vec {
+        seq.serialize_element(&**arc)?;
+    }
+    seq.end()
+}
+
+/// Helper function to deserialize Vec<Arc<str>>
+fn deserialize_arc_str_vec<'de, D>(d: D) -> std::result::Result<Vec<Arc<str>>, D::Error>
+where D: serde::Deserializer<'de> {
+    use serde::Deserialize;
+    let strings: Vec<String> = Vec::deserialize(d)?;
+    Ok(strings.into_iter().map(|s| Arc::from(s.as_str())).collect())
+}
+
+/// Helper function to serialize HashMap<Arc<str>, CompactValue>
+fn serialize_arc_str_hashmap<S>(
+    map: &HashMap<Arc<str>, CompactValue>,
+    s: S,
+) -> std::result::Result<S::Ok, S::Error>
+where S: serde::Serializer {
+    use serde::ser::SerializeMap;
+    let mut map_ser = s.serialize_map(Some(map.len()))?;
+    for (k, v) in map {
+        map_ser.serialize_entry(&**k, v)?;
+    }
+    map_ser.end()
+}
+
+/// Helper function to deserialize HashMap<Arc<str>, CompactValue>
+fn deserialize_arc_str_hashmap<'de, D>(
+    d: D,
+) -> std::result::Result<HashMap<Arc<str>, CompactValue>, D::Error>
+where D: serde::Deserializer<'de> {
+    use serde::Deserialize;
+    let map: HashMap<String, CompactValue> = HashMap::deserialize(d)?;
+    Ok(map.into_iter().map(|(k, v)| (Arc::from(k.as_str()), v)).collect())
+}
 
 /// Memory-optimized document with lazy loading and streaming support
 #[derive(Debug, Clone)]
@@ -61,15 +140,27 @@ struct OptimizedDocumentContent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactMetadata {
     /// Interned strings for common values
+    #[serde(with = "option_arc_str_serde", skip_serializing_if = "Option::is_none")]
     pub title: Option<Arc<str>>,
+    #[serde(with = "arc_str_serde")]
     pub source: Arc<str>,
+    #[serde(with = "arc_str_serde")]
     pub mime_type: Arc<str>,
+    #[serde(with = "option_arc_str_serde", skip_serializing_if = "Option::is_none")]
     pub language: Option<Arc<str>>,
     
     /// Authors as interned strings
+    #[serde(
+        serialize_with = "serialize_arc_str_vec",
+        deserialize_with = "deserialize_arc_str_vec"
+    )]
     pub authors: Vec<Arc<str>>,
     
     /// Only essential custom metadata
+    #[serde(
+        serialize_with = "serialize_arc_str_hashmap",
+        deserialize_with = "deserialize_arc_str_hashmap"
+    )]
     pub custom: HashMap<Arc<str>, CompactValue>,
     
     /// File size (no overhead)
@@ -79,14 +170,13 @@ pub struct CompactMetadata {
 /// Compact value type for metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CompactValue {
-    String(Arc<str>),
+    String(#[serde(with = "arc_str_serde")] Arc<str>),
     Number(f64),
     Boolean(bool),
     Array(Vec<CompactValue>),
 }
 
 /// Lazy-loaded text content
-#[derive(Debug)]
 struct LazyText {
     /// Text data (loaded on demand)
     data: Option<Arc<str>>,
@@ -102,7 +192,6 @@ struct LazyText {
 }
 
 /// Streaming content for large binary data
-#[derive(Debug)]
 struct StreamingContent {
     /// Content size
     size: usize,
@@ -132,7 +221,7 @@ pub struct OptimizedImage {
 }
 
 /// Reference to image content (lazy-loaded)
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum ImageContentRef {
     /// Inline small images (< 1KB)
     Inline(Bytes),
@@ -148,6 +237,43 @@ enum ImageContentRef {
     
     /// Weak reference to shared data
     SharedRef(Weak<Bytes>),
+}
+
+// Manual Debug implementations for types with function pointers
+impl std::fmt::Debug for LazyText {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LazyText")
+            .field("data", &self.data)
+            .field("loader", &self.loader.as_ref().map(|_| "<function>"))
+            .field("length", &self.length)
+            .field("loaded", &self.loaded)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for StreamingContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StreamingContent")
+            .field("size", &self.size)
+            .field("stream_factory", &"<function>")
+            .field("chunk_cache", &self.chunk_cache)
+            .field("max_cached_chunks", &self.max_cached_chunks)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for ImageContentRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Inline(bytes) => f.debug_tuple("Inline").field(bytes).finish(),
+            Self::FileRef(path) => f.debug_tuple("FileRef").field(path).finish(),
+            Self::Base64Ref { data, .. } => f.debug_struct("Base64Ref")
+                .field("data", data)
+                .field("loader", &"<function>")
+                .finish(),
+            Self::SharedRef(weak) => f.debug_tuple("SharedRef").field(weak).finish(),
+        }
+    }
 }
 
 /// Compact table storage
@@ -442,6 +568,7 @@ impl OptimizedDocument {
         }
         
         // Compress large tables
+        let mut memory_delta: isize = 0;
         for table in &mut content.tables {
             if let CompactTableData::Direct(ref rows) = table.rows {
                 if rows.len() > 100 { // Large table
@@ -464,12 +591,18 @@ impl OptimizedDocument {
                             original_size,
                         };
                         
-                        content.memory_usage = content.memory_usage
-                            .saturating_sub(original_size)
-                            .saturating_add(serialized.len());
+                        memory_delta -= original_size as isize;
+                        memory_delta += serialized.len() as isize;
                     }
                 }
             }
+        }
+        
+        // Apply memory delta after the loop
+        if memory_delta < 0 {
+            content.memory_usage = content.memory_usage.saturating_sub((-memory_delta) as usize);
+        } else {
+            content.memory_usage = content.memory_usage.saturating_add(memory_delta as usize);
         }
         
         let saved = initial_usage.saturating_sub(content.memory_usage);
@@ -517,7 +650,7 @@ impl OptimizedImage {
     pub async fn get_data(&self) -> Result<Option<Bytes>> {
         match &self.content {
             ImageContentRef::Inline(bytes) => Ok(Some(bytes.clone())),
-            ImageContentRef::FileRef(path) => {
+            ImageContentRef::FileRef(_path) => {
                 // Load from file (implementation would read file)
                 Ok(None) // Placeholder
             }
@@ -594,13 +727,15 @@ impl CompactTable {
             CompactTableData::Compressed { data, .. } => {
                 // Decompress data
                 let decompressed = decompress_data(data)?;
-                let rows: Vec<Vec<Arc<str>>> = serde_json::from_slice(&decompressed)
-                    .map_err(|e| NeuralDocFlowError::SerializationError {
-                        message: e.to_string(),
-                    })?;
+                let string_rows: Vec<Vec<String>> = serde_json::from_slice(&decompressed)
+                    .map_err(|e| NeuralDocFlowError::SerializationError(e))?;
+                // Convert String to Arc<str>
+                let rows = string_rows.into_iter()
+                    .map(|row| row.into_iter().map(|s| Arc::from(s.as_str())).collect())
+                    .collect();
                 Ok(rows)
             }
-            CompactTableData::External(path) => {
+            CompactTableData::External(_path) => {
                 // Load from external file (placeholder)
                 Ok(Vec::new())
             }
@@ -678,12 +813,15 @@ impl OptimizedProcessor {
     async fn process_text_document(&mut self, doc: &mut OptimizedDocument, data: Bytes) -> Result<()> {
         // Convert to string and set as lazy text
         let text = String::from_utf8(data.to_vec())
-            .map_err(|e| NeuralDocFlowError::ProcessingError {
-                message: format!("Invalid UTF-8: {}", e),
-            })?;
+            .map_err(|e| NeuralDocFlowError::ProcessingError(
+                ProcessingError::ProcessorFailed {
+                    processor_name: "text_decoder".to_string(),
+                    reason: format!("Invalid UTF-8: {}", e),
+                }
+            ))?;
         
         let text_len = text.len();
-        let text_arc = Arc::from(text.as_str());
+        let text_arc: Arc<str> = Arc::from(text.as_str());
         
         doc.set_text_lazy(move || Ok(text_arc.clone()), text_len).await?;
         
@@ -697,7 +835,7 @@ impl OptimizedProcessor {
         
         doc.set_streaming_content(data_size, move || {
             let data = data_clone.clone();
-            Box::new(futures::stream::once(async move { Ok(data) }))
+            Box::new(futures::stream::once(futures::future::ready(Ok(data))))
         }).await?;
         
         Ok(())
@@ -706,7 +844,7 @@ impl OptimizedProcessor {
     async fn process_generic_document(&mut self, doc: &mut OptimizedDocument, data: Bytes) -> Result<()> {
         // Process as streaming content
         let data_size = data.len();
-        let chunks = self.streaming_processor.process_document_stream(data);
+        let _chunks = self.streaming_processor.process_document_stream(data);
         
         // Store reference to stream factory
         doc.set_streaming_content(data_size, move || {

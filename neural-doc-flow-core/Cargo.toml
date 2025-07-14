@@ -47,6 +47,7 @@ aho-corasick = { workspace = true }
 # Memory and performance
 ndarray = { workspace = true, optional = true }
 bytes = { workspace = true }
+wide = { version = "0.7", optional = true }
 
 # Unix/Linux system utilities (for sandboxing, optional)
 nix = { workspace = true, optional = true }
@@ -71,7 +72,7 @@ performance = ["rayon", "crossbeam", "parking_lot"]
 monitoring = ["metrics", "opentelemetry"]
 
 # SIMD and mathematical operations
-simd = ["ndarray"]
+simd = ["ndarray", "wide"]
 
 # Neural processing support
 neural = ["simd"]

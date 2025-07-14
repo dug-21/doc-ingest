@@ -29,6 +29,12 @@ tracing = "0.1"
 # Text processing
 regex = "1.0"
 
+# Random number generation for neural networks
+rand = "0.8"
+
+# Mathematical operations for neural networks
+ndarray = { workspace = true }
+
 # Performance utilities
 rayon = { version = "1.7", optional = true }
 crossbeam = { version = "0.8", optional = true }
@@ -43,6 +49,24 @@ ruv-fann = { version = "0.1.6", optional = true }
 
 # Performance monitoring
 metrics = { version = "0.21", optional = true }
+
+# Binary serialization
+bincode = { workspace = true }
+
+# TOML parsing
+toml = "0.8"
+
+# System utilities
+num_cpus = { workspace = true }
+
+# HTTP client
+reqwest = { workspace = true }
+
+# Memory management
+bytes = { workspace = true }
+
+# Async utilities
+futures = { workspace = true }
 
 [features]
 default = ["performance"]

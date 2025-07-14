@@ -564,6 +564,8 @@ pub enum ActivationFunction {
     Cos,
 }
 
+// Temporarily disabled until ruv_fann is properly imported
+/*
 impl From<ActivationFunction> for ruv_fann::ActivationFunc {
     fn from(af: ActivationFunction) -> Self {
         match af {
@@ -587,6 +589,7 @@ impl From<ActivationFunction> for ruv_fann::ActivationFunc {
         }
     }
 }
+*/
 
 /// Training algorithms supported by ruv-FANN
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -598,14 +601,15 @@ pub enum TrainingAlgorithm {
     Sarprop,
 }
 
+#[cfg(feature = "neural")]
 impl From<TrainingAlgorithm> for ruv_fann::TrainingAlgorithm {
     fn from(ta: TrainingAlgorithm) -> Self {
         match ta {
-            TrainingAlgorithm::Incremental => ruv_fann::TrainingAlgorithm::Incremental,
+            TrainingAlgorithm::Incremental => ruv_fann::TrainingAlgorithm::Batch, // Incremental doesn't exist, use Batch
             TrainingAlgorithm::Batch => ruv_fann::TrainingAlgorithm::Batch,
-            TrainingAlgorithm::Rprop => ruv_fann::TrainingAlgorithm::Rprop,
-            TrainingAlgorithm::Quickprop => ruv_fann::TrainingAlgorithm::Quickprop,
-            TrainingAlgorithm::Sarprop => ruv_fann::TrainingAlgorithm::Sarprop,
+            TrainingAlgorithm::Rprop => ruv_fann::TrainingAlgorithm::RProp,
+            TrainingAlgorithm::Quickprop => ruv_fann::TrainingAlgorithm::QuickProp,
+            TrainingAlgorithm::Sarprop => ruv_fann::TrainingAlgorithm::Batch, // SARProp doesn't exist, use Batch
         }
     }
 }
@@ -643,7 +647,7 @@ pub enum LogLevel {
 impl NeuralConfig {
     /// Load configuration from file
     pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self> {
-        let content = std::fs::read_to_string(path)
+        let content = std::fs::read_to_string(&path)
             .map_err(|e| NeuralError::Configuration(format!("Failed to read config file: {}", e)))?;
         
         let config: NeuralConfig = if path.as_ref().extension().and_then(|s| s.to_str()) == Some("toml") {

@@ -12,6 +12,7 @@ pub mod document;
 pub mod result;
 pub mod config;
 pub mod engine;
+pub mod plugins;
 
 // Memory optimization modules
 pub mod memory;

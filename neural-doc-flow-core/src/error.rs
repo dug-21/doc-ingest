@@ -113,16 +113,31 @@ pub enum ProcessingError {
     Training(String),
 
     #[error("Validation error: {0}")]
-    Validation(String),
+    ValidationError(String),
 
     #[error("Serialization error: {0}")]
-    Serialization(String),
+    SerializationError(String),
 
     #[error("Deserialization error: {0}")]
-    Deserialization(String),
+    DeserializationError(String),
 
     #[error("Security violation: {0}")]
     SecurityViolation(String),
+
+    #[error("Schema not found: {0}")]
+    SchemaNotFound(String),
+
+    #[error("Template not found: {0}")]
+    TemplateNotFound(String),
+
+    #[error("Unsupported format: {0}")]
+    UnsupportedFormat(String),
+
+    #[error("Unsupported operation: {0}")]
+    UnsupportedOperation(String),
+
+    #[error("IO error: {0}")]
+    IoError(String),
 }
 
 /// Neural processing specific errors

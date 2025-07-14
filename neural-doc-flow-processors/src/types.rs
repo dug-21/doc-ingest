@@ -108,7 +108,7 @@ impl ContentBlock {
 }
 
 /// Position information for content blocks
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Position {
     /// Page number (0-based)
     pub page: usize,
@@ -681,6 +681,21 @@ pub enum QualityIssueType {
     UnrecognizedText,
     LayoutInconsistency,
     Custom(String),
+}
+
+impl std::fmt::Display for QualityIssueType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QualityIssueType::LowConfidence => write!(f, "low_confidence"),
+            QualityIssueType::InconsistentFormatting => write!(f, "inconsistent_formatting"),
+            QualityIssueType::MissingContent => write!(f, "missing_content"),
+            QualityIssueType::OverlappingBlocks => write!(f, "overlapping_blocks"),
+            QualityIssueType::MalformedTable => write!(f, "malformed_table"),
+            QualityIssueType::UnrecognizedText => write!(f, "unrecognized_text"),
+            QualityIssueType::LayoutInconsistency => write!(f, "layout_inconsistency"),
+            QualityIssueType::Custom(name) => write!(f, "custom_{}", name),
+        }
+    }
 }
 
 /// Issue severity levels

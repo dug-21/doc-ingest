@@ -3,7 +3,7 @@
 use crate::{
     config::ModelType,
     error::{NeuralError, Result},
-    traits::{ContentProcessor, QualityAssessor},
+    traits::{ContentProcessor, QualityAssessor as QualityAssessorTrait},
     types::{ContentBlock, EnhancedContent, NeuralFeatures, QualityAssessment},
 };
 use std::collections::HashMap;
@@ -11,7 +11,6 @@ use std::time::Duration;
 use async_trait::async_trait;
 
 /// Content enhancer using neural processing
-#[derive(Debug)]
 pub struct ContentEnhancer {
     /// Enhancement strategies for different content types
     strategies: HashMap<String, Box<dyn ContentProcessor>>,
@@ -48,25 +47,27 @@ impl ContentEnhancer {
         let mut enhanced_blocks = Vec::new();
         let mut total_confidence = 0.0;
 
-        for mut block in content {
+        for block in content {
             let original_confidence = block.confidence;
             
             if let Some(processor) = self.strategies.get(&block.content_type) {
                 match processor.process(&block).await {
                     Ok(enhanced_block) => {
-                        total_confidence += enhanced_block.confidence;
+                        let confidence = enhanced_block.confidence;
                         enhanced_blocks.push(enhanced_block);
+                        total_confidence += confidence;
                         
                         // Record successful enhancement
                         self.metrics.successful_enhancements += 1;
                         self.metrics.confidence_improvement += 
-                            enhanced_block.confidence - original_confidence;
+                            confidence - original_confidence;
                     }
                     Err(e) => {
                         // Keep original block on error
+                        let block_id = block.id.clone();
                         enhanced_blocks.push(block);
                         self.metrics.failed_enhancements += 1;
-                        tracing::warn!("Enhancement failed for block {}: {}", block.id, e);
+                        tracing::warn!("Enhancement failed for block {}: {}", block_id, e);
                     }
                 }
             } else {
@@ -154,17 +155,18 @@ impl LayoutAnalyzer {
         let mut reading_order = Vec::new();
 
         for (page_num, page_blocks) in pages {
-            let page_regions = self.analyze_page_layout(page_blocks)?;
+            let page_regions = self.analyze_page_layout(&page_blocks)?;
             let page_reading_order = self.determine_reading_order(&page_regions);
             
             regions.extend(page_regions);
             reading_order.extend(page_reading_order);
         }
 
+        let confidence = self.calculate_layout_confidence(&regions);
         let result = LayoutAnalysisResult {
             regions,
             reading_order,
-            confidence: self.calculate_layout_confidence(&regions),
+            confidence,
             processing_time: start_time.elapsed(),
         };
 
@@ -287,8 +289,8 @@ impl LayoutAnalyzer {
         for block in blocks {
             block.id.hash(&mut hasher);
             block.position.page.hash(&mut hasher);
-            (block.position.x * 1000.0) as i32.hash(&mut hasher);
-            (block.position.y * 1000.0) as i32.hash(&mut hasher);
+            ((block.position.x * 1000.0) as i32).hash(&mut hasher);
+            ((block.position.y * 1000.0) as i32).hash(&mut hasher);
         }
 
         format!("layout_{}", hasher.finish())
@@ -527,7 +529,7 @@ impl TableDetector {
     }
 
     /// Find grid patterns in block positions
-    fn find_grid_patterns(&self, blocks: &[ContentBlock]) -> Result<Vec<GridPattern>> {
+    fn find_grid_patterns<'a>(&self, blocks: &'a [ContentBlock]) -> Result<Vec<GridPattern<'a>>> {
         // Simplified grid detection - group blocks by approximate Y position
         let mut y_groups: Vec<Vec<&ContentBlock>> = Vec::new();
         
@@ -661,7 +663,7 @@ impl TableDetector {
 
 /// Quality assessor for content validation
 #[derive(Debug)]
-pub struct QualityAssessor {
+pub struct QualityAssessorImpl {
     /// Quality thresholds
     thresholds: QualityThresholds,
     
@@ -669,7 +671,7 @@ pub struct QualityAssessor {
     cache: HashMap<String, QualityAssessment>,
 }
 
-impl QualityAssessor {
+impl QualityAssessorImpl {
     /// Create a new quality assessor
     pub fn new() -> Self {
         Self {
@@ -688,7 +690,7 @@ impl QualityAssessor {
 }
 
 #[async_trait]
-impl QualityAssessor for QualityAssessor {
+impl QualityAssessorTrait for QualityAssessorImpl {
     async fn assess(&self, content: &EnhancedContent) -> Result<crate::traits::QualityReport> {
         let assessment_key = self.generate_assessment_key(content);
         
@@ -746,7 +748,7 @@ impl QualityAssessor for QualityAssessor {
     }
 }
 
-impl QualityAssessor {
+impl QualityAssessorImpl {
     /// Assess text quality
     fn assess_text_quality(&self, content: &EnhancedContent, 
                           issues: &mut Vec<crate::traits::QualityIssue>, 
@@ -759,7 +761,7 @@ impl QualityAssessor {
 
         let mut total_score = 0.0;
         
-        for block in text_blocks {
+        for block in &text_blocks {
             let mut block_score = block.confidence;
             
             // Check for text quality issues
@@ -831,7 +833,7 @@ impl QualityAssessor {
 
         let mut total_score = 0.0;
         
-        for block in table_blocks {
+        for block in &table_blocks {
             let mut block_score = block.confidence;
             
             // Check for malformed tables
@@ -916,7 +918,7 @@ impl QualityAssessor {
             .filter(|&&count| count == first_count)
             .count();
 
-        consistent_rows as f32 / column_counts.len() as f32 < 0.7
+        (consistent_rows as f32 / column_counts.len() as f32) < 0.7
     }
 
     /// Generate cache key for quality assessment
@@ -1041,16 +1043,16 @@ pub enum TableType {
 
 /// Grid pattern for spatial table detection
 #[derive(Debug, Clone)]
-struct GridPattern {
+struct GridPattern<'a> {
     pub rows: usize,
     pub columns: usize,
     pub bounds: crate::types::Position,
     pub confidence: f32,
     pub blocks: Vec<String>,
-    pub y_groups: Vec<Vec<&'_ ContentBlock>>,
+    pub y_groups: Vec<Vec<&'a ContentBlock>>,
 }
 
-impl GridPattern {
+impl<'a> GridPattern<'a> {
     /// Extract data from the grid pattern
     fn extract_data(&self, all_blocks: &[ContentBlock]) -> Result<Vec<Vec<String>>> {
         let mut data = Vec::new();

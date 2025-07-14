@@ -4,6 +4,8 @@
 //! using ruv-FANN for document enhancement and analysis.
 
 pub mod engine;
+pub mod simple_neural;
+pub mod fann_processor;
 
 use crate::{
     config::ModelType,
@@ -11,14 +13,24 @@ use crate::{
     traits::{NeuralProcessorTrait, NeuralInference, FeatureExtractor},
     types::{ContentBlock, NeuralFeatures, ConfidenceScore},
 };
-use ruv_fann::Fann;
+
+// Export neural processors
+pub use simple_neural::SimpleNeuralProcessor;
+pub use fann_processor::FannNeuralProcessor;
+pub use engine::NeuralEngine;
+
+#[cfg(feature = "neural")]
+use ruv_fann::Network;
+
+#[cfg(feature = "neural")]
+type Fann = Network<f32>;
+
+#[cfg(not(feature = "neural"))]
+type Fann = ();
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 
-pub use engine::NeuralEngine;
-
 /// Main neural processor implementation
-#[derive(Debug)]
 pub struct NeuralProcessor {
     /// Active neural networks
     networks: HashMap<ModelType, Arc<Mutex<Fann>>>,
@@ -63,7 +75,7 @@ impl NeuralProcessor {
 
 #[async_trait::async_trait]
 impl NeuralInference for NeuralProcessor {
-    async fn infer(&self, input: &[f32]) -> Result<Vec<f32>> {
+    async fn infer(&self, _input: &[f32]) -> Result<Vec<f32>> {
         // This would need to specify which model to use
         // For now, just return an error since we need model specification
         Err(NeuralError::InvalidInput("Model type not specified".to_string()))
@@ -216,26 +228,27 @@ pub enum ActivationFunction {
     Cos,
 }
 
-impl From<ActivationFunction> for ruv_fann::ActivationFunc {
+#[cfg(feature = "neural")]
+impl From<ActivationFunction> for ruv_fann::ActivationFunction {
     fn from(af: ActivationFunction) -> Self {
         match af {
-            ActivationFunction::Linear => ruv_fann::ActivationFunc::Linear,
-            ActivationFunction::Threshold => ruv_fann::ActivationFunc::Threshold,
-            ActivationFunction::ThresholdSymmetric => ruv_fann::ActivationFunc::ThresholdSymmetric,
-            ActivationFunction::Sigmoid => ruv_fann::ActivationFunc::Sigmoid,
-            ActivationFunction::SigmoidStepwise => ruv_fann::ActivationFunc::SigmoidStepwise,
-            ActivationFunction::SigmoidSymmetric => ruv_fann::ActivationFunc::SigmoidSymmetric,
-            ActivationFunction::SigmoidSymmetricStepwise => ruv_fann::ActivationFunc::SigmoidSymmetricStepwise,
-            ActivationFunction::Gaussian => ruv_fann::ActivationFunc::Gaussian,
-            ActivationFunction::GaussianSymmetric => ruv_fann::ActivationFunc::GaussianSymmetric,
-            ActivationFunction::Elliot => ruv_fann::ActivationFunc::Elliot,
-            ActivationFunction::ElliotSymmetric => ruv_fann::ActivationFunc::ElliotSymmetric,
-            ActivationFunction::LinearPiece => ruv_fann::ActivationFunc::LinearPiece,
-            ActivationFunction::LinearPieceSymmetric => ruv_fann::ActivationFunc::LinearPieceSymmetric,
-            ActivationFunction::SinSymmetric => ruv_fann::ActivationFunc::SinSymmetric,
-            ActivationFunction::CosSymmetric => ruv_fann::ActivationFunc::CosSymmetric,
-            ActivationFunction::Sin => ruv_fann::ActivationFunc::Sin,
-            ActivationFunction::Cos => ruv_fann::ActivationFunc::Cos,
+            ActivationFunction::Linear => ruv_fann::ActivationFunction::Linear,
+            ActivationFunction::Threshold => ruv_fann::ActivationFunction::Threshold,
+            ActivationFunction::ThresholdSymmetric => ruv_fann::ActivationFunction::ThresholdSymmetric,
+            ActivationFunction::Sigmoid => ruv_fann::ActivationFunction::Sigmoid,
+            ActivationFunction::SigmoidStepwise => ruv_fann::ActivationFunction::Sigmoid, // SigmoidStepwise doesn't exist
+            ActivationFunction::SigmoidSymmetric => ruv_fann::ActivationFunction::SigmoidSymmetric,
+            ActivationFunction::SigmoidSymmetricStepwise => ruv_fann::ActivationFunction::SigmoidSymmetric,
+            ActivationFunction::Gaussian => ruv_fann::ActivationFunction::Gaussian,
+            ActivationFunction::GaussianSymmetric => ruv_fann::ActivationFunction::GaussianSymmetric,
+            ActivationFunction::Elliot => ruv_fann::ActivationFunction::Elliot,
+            ActivationFunction::ElliotSymmetric => ruv_fann::ActivationFunction::ElliotSymmetric,
+            ActivationFunction::LinearPiece => ruv_fann::ActivationFunction::LinearPiece,
+            ActivationFunction::LinearPieceSymmetric => ruv_fann::ActivationFunction::LinearPieceSymmetric,
+            ActivationFunction::SinSymmetric => ruv_fann::ActivationFunction::SinSymmetric,
+            ActivationFunction::CosSymmetric => ruv_fann::ActivationFunction::CosSymmetric,
+            ActivationFunction::Sin => ruv_fann::ActivationFunction::Sin,
+            ActivationFunction::Cos => ruv_fann::ActivationFunction::Cos,
         }
     }
 }
@@ -250,14 +263,15 @@ pub enum TrainingAlgorithm {
     Sarprop,
 }
 
+#[cfg(feature = "neural")]
 impl From<TrainingAlgorithm> for ruv_fann::TrainingAlgorithm {
     fn from(ta: TrainingAlgorithm) -> Self {
         match ta {
-            TrainingAlgorithm::Incremental => ruv_fann::TrainingAlgorithm::Incremental,
+            TrainingAlgorithm::Incremental => ruv_fann::TrainingAlgorithm::Batch, // Incremental doesn't exist, use Batch
             TrainingAlgorithm::Batch => ruv_fann::TrainingAlgorithm::Batch,
-            TrainingAlgorithm::Rprop => ruv_fann::TrainingAlgorithm::Rprop,
-            TrainingAlgorithm::Quickprop => ruv_fann::TrainingAlgorithm::Quickprop,
-            TrainingAlgorithm::Sarprop => ruv_fann::TrainingAlgorithm::Sarprop,
+            TrainingAlgorithm::Rprop => ruv_fann::TrainingAlgorithm::RProp,
+            TrainingAlgorithm::Quickprop => ruv_fann::TrainingAlgorithm::QuickProp,
+            TrainingAlgorithm::Sarprop => ruv_fann::TrainingAlgorithm::Batch, // SARProp doesn't exist, use Batch
         }
     }
 }
@@ -268,25 +282,24 @@ pub struct NetworkFactory;
 impl NetworkFactory {
     /// Create a new neural network based on configuration
     pub fn create_network(config: &NetworkConfig) -> Result<Fann> {
+        // Convert u32 layers to usize for ruv-fann API
+        let layers: Vec<usize> = config.layers.iter().map(|&x| x as usize).collect();
+        
         let network = match config.network_type {
             NetworkType::Standard => {
-                Fann::new_standard(&config.layers)
-                    .map_err(|e| NeuralError::NetworkCreation(format!("Standard network: {}", e)))?
+                Network::<f32>::new(&layers)
             }
             NetworkType::Sparse => {
-                let connection_rate = config.connection_rate.unwrap_or(0.8);
-                Fann::new_sparse(connection_rate, &config.layers)
-                    .map_err(|e| NeuralError::NetworkCreation(format!("Sparse network: {}", e)))?
+                // For now, create a standard network - sparse implementation may need different API
+                Network::<f32>::new(&layers)
             }
             NetworkType::Shortcut => {
-                Fann::new_shortcut(&config.layers)
-                    .map_err(|e| NeuralError::NetworkCreation(format!("Shortcut network: {}", e)))?
+                Network::<f32>::new(&layers)
             }
             NetworkType::Cascade => {
                 // Cascade networks are created differently in ruv-FANN
                 // For now, create a standard network and note this limitation
-                Fann::new_standard(&config.layers)
-                    .map_err(|e| NeuralError::NetworkCreation(format!("Cascade network (fallback to standard): {}", e)))?
+                Network::<f32>::new(&layers)
             }
         };
 
@@ -343,6 +356,7 @@ impl NetworkFactory {
 }
 
 /// Model inference helper functions
+#[cfg(feature = "neural")]
 pub mod inference {
     use super::*;
 
@@ -355,9 +369,10 @@ pub mod inference {
     ) -> Result<Vec<f32>> {
         let start_time = std::time::Instant::now();
 
+        let input_owned = input.to_vec();
         let result = tokio::task::spawn_blocking(move || {
             let mut net = network.lock().unwrap();
-            net.run(input)
+            net.run(&input_owned)
         }).await;
 
         let duration = start_time.elapsed();
@@ -373,9 +388,8 @@ pub mod inference {
             }
         }
 
-        result
-            .map_err(|e| NeuralError::Inference(format!("Task join error: {}", e)))?
-            .map_err(|e| NeuralError::Inference(format!("ruv-FANN error: {}", e)))
+        Ok(result
+            .map_err(|e| NeuralError::Inference(format!("Task join error: {}", e)))?)
     }
 
     /// Run batch inference with parallel processing

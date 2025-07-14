@@ -93,17 +93,22 @@ pub enum NeuralError {
     DaaCoordination(String),
 }
 
+// Temporarily disabled until ruv_fann is properly imported
+/*
 /// Convert from ruv-FANN error types
 impl From<ruv_fann::Error> for NeuralError {
     fn from(err: ruv_fann::Error) -> Self {
         NeuralError::RuvFann(err.to_string())
     }
 }
+*/
 
 /// Convert from bincode error
 impl From<bincode::Error> for NeuralError {
     fn from(err: bincode::Error) -> Self {
-        NeuralError::Serialization(serde_json::Error::custom(err.to_string()))
+        NeuralError::Serialization(serde_json::Error::io(
+            std::io::Error::new(std::io::ErrorKind::InvalidData, err.to_string())
+        ))
     }
 }
 
@@ -121,6 +126,12 @@ impl From<reqwest::Error> for NeuralError {
 impl From<tokio::task::JoinError> for NeuralError {
     fn from(err: tokio::task::JoinError) -> Self {
         NeuralError::Configuration(format!("Task join error: {}", err))
+    }
+}
+
+impl From<neural_doc_flow_core::error::NeuralDocFlowError> for NeuralError {
+    fn from(err: neural_doc_flow_core::error::NeuralDocFlowError) -> Self {
+        NeuralError::Configuration(err.to_string())
     }
 }
 

@@ -4,11 +4,10 @@
 //! including text analysis, parsing acceleration, and memory-aligned operations.
 
 #[cfg(feature = "simd")]
-use wide::{f32x8, u32x8, u64x4, i32x8};
+use wide::{f32x8, u32x8};
 
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
-use std::collections::HashMap;
-use std::simd::{u8x32, u8x16};
 
 /// SIMD-optimized document processor for high-performance text operations
 pub struct SimdDocumentProcessor {
@@ -213,64 +212,9 @@ impl SimdDocumentProcessor {
     /// AVX512 word and line counting
     #[cfg(target_arch = "x86_64")]
     fn simd_count_avx512(&mut self, text: &[u8]) -> (usize, usize) {
-        if !self.cpu_features.avx512bw {
-            return self.simd_count_avx2(text);
-        }
-
-        unsafe {
-            let mut word_count = 0usize;
-            let mut line_count = 0usize;
-            let mut was_whitespace = true;
-
-            let space_vec = _mm512_set1_epi8(b' ' as i8);
-            let tab_vec = _mm512_set1_epi8(b'\t' as i8);
-            let newline_vec = _mm512_set1_epi8(b'\n' as i8);
-            let cr_vec = _mm512_set1_epi8(b'\r' as i8);
-
-            for chunk in text.chunks(64) {
-                if chunk.len() == 64 {
-                    let data_vec = _mm512_loadu_si512(chunk.as_ptr() as *const i32);
-                    
-                    // Count newlines
-                    let newline_mask = _mm512_cmpeq_epi8_mask(data_vec, newline_vec);
-                    line_count += newline_mask.count_ones() as usize;
-                    
-                    // Detect whitespace characters
-                    let space_mask = _mm512_cmpeq_epi8_mask(data_vec, space_vec);
-                    let tab_mask = _mm512_cmpeq_epi8_mask(data_vec, tab_vec);
-                    let cr_mask = _mm512_cmpeq_epi8_mask(data_vec, cr_vec);
-                    let whitespace_mask = space_mask | tab_mask | newline_mask | cr_mask;
-                    
-                    // Count word boundaries (transitions from whitespace to non-whitespace)
-                    for i in 0..64 {
-                        let is_whitespace = (whitespace_mask & (1u64 << i)) != 0;
-                        if was_whitespace && !is_whitespace {
-                            word_count += 1;
-                        }
-                        was_whitespace = is_whitespace;
-                    }
-                } else {
-                    // Handle remainder with scalar processing
-                    for &byte in chunk {
-                        if byte == b'\n' {
-                            line_count += 1;
-                        }
-                        let is_whitespace = byte.is_ascii_whitespace();
-                        if was_whitespace && !is_whitespace {
-                            word_count += 1;
-                        }
-                        was_whitespace = is_whitespace;
-                    }
-                }
-            }
-
-            // Add 1 to line count if text doesn't end with newline
-            if !text.is_empty() && text[text.len() - 1] != b'\n' {
-                line_count += 1;
-            }
-
-            (word_count, line_count)
-        }
+        // AVX-512 requires nightly Rust with unstable features
+        // Fallback to AVX2 for now
+        self.simd_count_avx2(text)
     }
 
     /// AVX2 word and line counting

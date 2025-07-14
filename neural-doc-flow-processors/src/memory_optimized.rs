@@ -7,21 +7,19 @@ use crate::{
     config::ModelType,
     error::{Result, NeuralError},
     traits::{ContentProcessor, QualityAssessor},
-    types::*,
+    types::{ContentBlock, Position},
 };
 use neural_doc_flow_core::{
     memory::*,
     optimized_types::*,
-    error::NeuralDocFlowError,
 };
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use std::collections::HashMap;
 use bytes::{Bytes, BytesMut};
-use tokio::sync::{RwLock, Semaphore};
+use tokio::sync::RwLock;
 use parking_lot::Mutex;
 use uuid::Uuid;
 use std::time::{Duration, Instant};
-use async_trait::async_trait;
 
 /// Memory-optimized content processor
 pub struct MemoryOptimizedProcessor {
@@ -83,12 +81,10 @@ impl MemoryOptimizedProcessor {
         // Check memory availability
         let estimated_size = self.estimate_processing_size(content);
         if self.monitor.would_exceed_limit(estimated_size) {
-            return Err(NeuralError::MemoryError {
-                message: format!(
-                    "Processing would exceed memory limit: {} + {} > {}",
-                    initial_memory, estimated_size, self.memory_limit
-                ),
-            });
+            return Err(NeuralError::Memory(format!(
+                "Processing would exceed memory limit: {} + {} > {}",
+                initial_memory, estimated_size, self.memory_limit
+            )));
         }
         
         // Allocate processing ID for tracking
@@ -115,9 +111,9 @@ impl MemoryOptimizedProcessor {
     
     /// Process text content with memory optimization
     async fn process_text_optimized(&self, content: &ContentBlock) -> Result<OptimizedContentBlock> {
-        let text = content.text.as_ref().ok_or_else(|| NeuralError::ProcessingError {
-            message: "No text content found".to_string(),
-        })?;
+        let text = content.text.as_ref().ok_or_else(|| NeuralError::InvalidInput(
+            "No text content found".to_string()
+        ))?;
         
         // Use string cache for deduplication
         let cached_text = self.string_cache.lock().get_or_insert(text);
@@ -144,9 +140,9 @@ impl MemoryOptimizedProcessor {
     
     /// Process table content with memory optimization
     async fn process_table_optimized(&self, content: &ContentBlock) -> Result<OptimizedContentBlock> {
-        let text = content.text.as_ref().ok_or_else(|| NeuralError::ProcessingError {
-            message: "No table content found".to_string(),
-        })?;
+        let text = content.text.as_ref().ok_or_else(|| NeuralError::InvalidInput(
+            "No table content found".to_string()
+        ))?;
         
         // Parse table efficiently using arena allocation
         let table_data = self.parse_table_with_arena(text).await?;
@@ -176,9 +172,9 @@ impl MemoryOptimizedProcessor {
     
     /// Process image content with memory optimization
     async fn process_image_optimized(&self, content: &ContentBlock) -> Result<OptimizedContentBlock> {
-        let image_data = content.binary_data.as_ref().ok_or_else(|| NeuralError::ProcessingError {
-            message: "No image data found".to_string(),
-        })?;
+        let image_data = content.binary_data.as_ref().ok_or_else(|| NeuralError::InvalidInput(
+            "No image data found".to_string()
+        ))?;
         
         // Process image in streaming chunks to avoid loading entire image
         let optimized_image = self.process_image_streaming(image_data).await?;
@@ -205,7 +201,7 @@ impl MemoryOptimizedProcessor {
         Ok(OptimizedContentBlock {
             id: content.id.clone(),
             content_type: content.content_type.clone(),
-            text_content: content.text.clone(),
+            text_content: content.text.as_deref().map(Arc::from),
             binary_content: content.binary_data.clone(),
             position: content.position.clone(),
             confidence: content.confidence,
@@ -334,11 +330,14 @@ impl MemoryOptimizedProcessor {
     async fn compress_table_data(&self, table: CompactTableData) -> Result<CompactTableData> {
         match table {
             CompactTableData::Direct(rows) if rows.len() > 50 => {
+                // Convert Arc<str> to String for serialization
+                let serializable_rows: Vec<Vec<String>> = rows.iter()
+                    .map(|row| row.iter().map(|cell| cell.to_string()).collect())
+                    .collect();
+                
                 // Serialize and compress for large tables
-                let serialized = serde_json::to_vec(&rows)
-                    .map_err(|e| NeuralError::SerializationError {
-                        message: e.to_string(),
-                    })?;
+                let serialized = serde_json::to_vec(&serializable_rows)
+                    .map_err(|e| NeuralError::Serialization(e))?;
                 
                 // Simple compression (use proper compression library in real implementation)
                 let compressed = compress_simple(&serialized);
