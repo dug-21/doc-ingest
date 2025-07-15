@@ -1,6 +1,6 @@
 //! Network topology implementations
 
-use neural_doc_flow_core::Result;
+use anyhow::Result;
 use async_trait::async_trait;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};

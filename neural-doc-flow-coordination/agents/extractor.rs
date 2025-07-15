@@ -107,7 +107,7 @@ impl ExtractorAgent {
     }
     
     /// Extract content from document with neural enhancement
-    pub async fn extract_content(&mut self, document_data: Vec<u8>) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    pub async fn extract_content(&mut self, document_data: Vec<u8>) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let start_time = std::time::Instant::now();
         
         // Phase 1: Format detection
@@ -134,7 +134,7 @@ impl ExtractorAgent {
     }
     
     /// Detect document format using multiple heuristics
-    async fn detect_document_format(&self, data: &[u8]) -> Result<DocumentFormat, Box<dyn std::error::Error>> {
+    async fn detect_document_format(&self, data: &[u8]) -> Result<DocumentFormat, Box<dyn std::error::Error + Send + Sync>> {
         // Magic number detection
         if data.starts_with(b"%PDF") {
             return Ok(DocumentFormat::PDF);
@@ -178,7 +178,7 @@ impl ExtractorAgent {
     }
     
     /// Perform format-specific extraction
-    async fn perform_extraction(&self, data: &[u8], format: &DocumentFormat) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn perform_extraction(&self, data: &[u8], format: &DocumentFormat) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         match format {
             DocumentFormat::PlainText => self.extract_plain_text(data).await,
             DocumentFormat::PDF => self.extract_pdf_content(data).await,
@@ -193,7 +193,7 @@ impl ExtractorAgent {
     }
     
     /// Extract plain text content
-    async fn extract_plain_text(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_plain_text(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let text = String::from_utf8_lossy(data).to_string();
         
         let metadata = self.analyze_text_structure(&text).await;
@@ -208,7 +208,7 @@ impl ExtractorAgent {
     }
     
     /// Extract PDF content (simplified implementation)
-    async fn extract_pdf_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_pdf_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         // In a real implementation, this would use a PDF parsing library
         // For now, simulate PDF text extraction
         
@@ -229,7 +229,7 @@ impl ExtractorAgent {
     }
     
     /// Extract HTML content
-    async fn extract_html_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_html_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let html = String::from_utf8_lossy(data);
         
         // Simple HTML tag removal (in real implementation, would use proper HTML parser)
@@ -269,7 +269,7 @@ impl ExtractorAgent {
     }
     
     /// Extract XML content
-    async fn extract_xml_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_xml_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let xml = String::from_utf8_lossy(data);
         
         // Extract text content from XML (simplified)
@@ -289,7 +289,7 @@ impl ExtractorAgent {
     }
     
     /// Extract JSON content
-    async fn extract_json_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_json_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let json_str = String::from_utf8_lossy(data);
         
         // Extract text values from JSON (simplified)
@@ -321,7 +321,7 @@ impl ExtractorAgent {
     }
     
     /// Extract Markdown content
-    async fn extract_markdown_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_markdown_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let markdown = String::from_utf8_lossy(data).to_string();
         
         // Remove Markdown syntax (simplified)
@@ -363,7 +363,7 @@ impl ExtractorAgent {
     }
     
     /// Extract RTF content (simplified)
-    async fn extract_rtf_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_rtf_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         let rtf = String::from_utf8_lossy(data);
         
         // Simple RTF text extraction (remove control sequences)
@@ -384,7 +384,7 @@ impl ExtractorAgent {
     }
     
     /// Extract DOCX content (simplified)
-    async fn extract_docx_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_docx_content(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         // In a real implementation, this would extract from the ZIP-based DOCX format
         // For now, simulate DOCX extraction
         
@@ -405,7 +405,7 @@ impl ExtractorAgent {
     }
     
     /// Extract unknown format (fallback)
-    async fn extract_unknown_format(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn extract_unknown_format(&self, data: &[u8]) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         // Try to extract any readable text
         let text = String::from_utf8_lossy(data);
         
@@ -448,7 +448,7 @@ impl ExtractorAgent {
     }
     
     /// Enhance extraction result with neural processing
-    async fn enhance_with_neural_processing(&mut self, mut result: ExtractionResult) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    async fn enhance_with_neural_processing(&mut self, mut result: ExtractionResult) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         // Neural enhancement placeholder - will be implemented when neural engine is integrated
         // For now, just return the result unchanged
         result.neural_enhanced = false;
@@ -462,7 +462,7 @@ impl ExtractorAgent {
         mut result: ExtractionResult,
         _original_data: &[u8],
         format: &DocumentFormat,
-    ) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
+    ) -> Result<ExtractionResult, Box<dyn std::error::Error + Send + Sync>> {
         // Try alternative extraction methods
         match format {
             DocumentFormat::PDF | DocumentFormat::Unknown => {
@@ -514,12 +514,12 @@ impl DaaAgent for ExtractorAgent {
         self.capabilities.clone()
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Ready;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Processing;
         
         let extraction_result = self.extract_content(input).await?;
@@ -530,7 +530,7 @@ impl DaaAgent for ExtractorAgent {
         Ok(extraction_result.extracted_text.into_bytes())
     }
     
-    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match message.message_type {
             MessageType::Task => {
                 // Handle extraction task
@@ -545,7 +545,7 @@ impl DaaAgent for ExtractorAgent {
         Ok(())
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Completed;
         Ok(())
     }

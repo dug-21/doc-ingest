@@ -1,12 +1,18 @@
 /// DAA Message Passing System for Neural Document Processing
 /// High-performance inter-agent communication with priority queuing and fault tolerance
 
+// Conditional compilation for messaging features
+#[cfg(feature = "messaging")]
 use super::agents::{CoordinationMessage, MessageType};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::{RwLock, Notify};
 use uuid::Uuid;
+
+// Performance-oriented imports
+#[cfg(feature = "performance")]
+use std::time::Instant;
 
 pub mod priority_queue;
 pub mod fault_tolerance;
@@ -61,12 +67,19 @@ pub struct AgentRoute {
     pub reliability_score: f64,
 }
 
-/// Load Balancer for message distribution
+/// Load Balancer for message distribution (feature-gated)
+#[cfg(feature = "performance")]
 #[derive(Debug, Clone)]
 pub struct LoadBalancer {
     pub strategy: LoadBalancingStrategy,
     pub agent_loads: HashMap<Uuid, f32>,
     pub performance_history: HashMap<Uuid, Vec<f64>>,
+}
+
+#[cfg(not(feature = "performance"))]
+#[derive(Debug, Clone)]
+pub struct LoadBalancer {
+    pub strategy: LoadBalancingStrategy,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,13 +91,17 @@ pub enum LoadBalancingStrategy {
     CapabilityMatching,
 }
 
-/// Fault Tolerance Manager
+/// Fault Tolerance Manager (feature-gated)
+#[cfg(feature = "fault-tolerance")]
 pub struct FaultToleranceManager {
     pub failed_agents: HashMap<Uuid, FailureInfo>,
     pub message_retry_queue: VecDeque<RetryMessage>,
     pub circuit_breakers: HashMap<Uuid, CircuitBreaker>,
     pub backup_routes: HashMap<Uuid, Vec<Uuid>>,
 }
+
+#[cfg(not(feature = "fault-tolerance"))]
+pub struct FaultToleranceManager {}
 
 #[derive(Debug, Clone)]
 pub struct FailureInfo {
@@ -463,10 +480,15 @@ impl MessageRouter {
         Self {
             routing_table: Arc::new(RwLock::new(HashMap::new())),
             topology_type,
+            #[cfg(feature = "performance")]
             load_balancer: LoadBalancer {
                 strategy: LoadBalancingStrategy::PerformanceBased,
                 agent_loads: HashMap::new(),
                 performance_history: HashMap::new(),
+            },
+            #[cfg(not(feature = "performance"))]
+            load_balancer: LoadBalancer {
+                strategy: LoadBalancingStrategy::RoundRobin,
             },
         }
     }

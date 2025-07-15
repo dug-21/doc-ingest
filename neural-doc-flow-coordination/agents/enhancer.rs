@@ -261,6 +261,63 @@ impl EnhancerAgent {
             quality_score: avg_quality,
         })
     }
+    
+    /// Extract metadata from content using registered extractors
+    async fn extract_metadata(&self, content: &str) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+        let extractors = self.metadata_extractors.read().await;
+        let mut combined_metadata = serde_json::Map::new();
+        
+        for extractor in extractors.iter() {
+            if let Ok(metadata) = extractor.extract(content).await {
+                if let Some(obj) = metadata.as_object() {
+                    for (key, value) in obj {
+                        combined_metadata.insert(key.clone(), value.clone());
+                    }
+                }
+            }
+        }
+        
+        if combined_metadata.is_empty() {
+            // Default metadata if no extractors or all failed
+            Ok(serde_json::json!({
+                "word_count": content.split_whitespace().count(),
+                "line_count": content.lines().count(),
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }))
+        } else {
+            Ok(serde_json::Value::Object(combined_metadata))
+        }
+    }
+
+    /// Apply all enhancement strategies to content
+    async fn apply_enhancements(&self, content: &str, metadata: &serde_json::Value) -> Result<EnhancedContent, Box<dyn std::error::Error + Send + Sync>> {
+        let strategies = self.enhancement_strategies.read().await;
+        let mut current_content = content.to_string();
+        let mut all_enhancements = Vec::new();
+        let mut quality_scores = Vec::new();
+        
+        for strategy in strategies.iter() {
+            if let Ok(enhanced) = strategy.enhance(&current_content, metadata).await {
+                current_content = enhanced.enhanced;
+                all_enhancements.extend(enhanced.enhancements_applied);
+                quality_scores.push(enhanced.quality_score);
+            }
+        }
+        
+        let average_quality = if quality_scores.is_empty() {
+            0.5
+        } else {
+            quality_scores.iter().sum::<f64>() / quality_scores.len() as f64
+        };
+        
+        Ok(EnhancedContent {
+            original: content.to_string(),
+            enhanced: current_content,
+            metadata: metadata.clone(),
+            enhancements_applied: all_enhancements,
+            quality_score: average_quality,
+        })
+    }
 }
 
 #[async_trait]
@@ -291,13 +348,13 @@ impl DaaAgent for EnhancerAgent {
         }
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Set state through BaseAgent's async method
         self.base.set_state(crate::agents::base::AgentState::Ready).await;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.base.set_state(crate::agents::base::AgentState::Processing).await;
         
         // Convert input to string for processing
@@ -315,7 +372,7 @@ impl DaaAgent for EnhancerAgent {
         Ok(enhanced_content.enhanced.into_bytes())
     }
     
-    async fn coordinate(&mut self, message: super::CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, message: super::CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match message.message_type {
             super::MessageType::Task => {
                 // Handle task assignment
@@ -335,7 +392,7 @@ impl DaaAgent for EnhancerAgent {
         }
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.base.set_state(crate::agents::base::AgentState::Ready).await; // Use Ready since there's no Completed state
         Ok(())
     }

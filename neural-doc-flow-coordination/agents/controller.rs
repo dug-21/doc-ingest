@@ -13,36 +13,7 @@ pub struct ControllerAgent {
     coordination_stats: CoordinationStats,
 }
 
-#[derive(Debug, Clone)]
-pub struct ProcessingTask {
-    pub id: Uuid,
-    pub document_id: String,
-    pub task_type: TaskType,
-    pub priority: u8,
-    pub assigned_agent: Option<Uuid>,
-    pub status: TaskStatus,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub deadline: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TaskType {
-    DocumentExtraction,
-    TextEnhancement,
-    LayoutAnalysis,
-    QualityAssessment,
-    Formatting,
-    Validation,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TaskStatus {
-    Pending,
-    Assigned,
-    InProgress,
-    Completed,
-    Failed(String),
-}
+// Use ProcessingTask, TaskType, and TaskStatus from mod.rs
 
 #[derive(Debug, Clone)]
 pub struct CoordinationStats {
@@ -71,7 +42,7 @@ impl ControllerAgent {
         }
     }
     
-    pub async fn schedule_task(&mut self, task: ProcessingTask) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn schedule_task(&mut self, task: ProcessingTask) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Priority-based insertion
         let insert_pos = self.task_queue
             .iter()
@@ -86,7 +57,7 @@ impl ControllerAgent {
         &mut self,
         task_id: Uuid,
         agent_id: Uuid,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         if let Some(task) = self.task_queue.iter_mut().find(|t| t.id == task_id) {
             task.assigned_agent = Some(agent_id);
             task.status = TaskStatus::Assigned;
@@ -97,7 +68,7 @@ impl ControllerAgent {
     pub async fn orchestrate_pipeline(
         &mut self,
         document_data: Vec<u8>,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         let start_time = std::time::Instant::now();
         
         // Create processing tasks for the document
@@ -192,31 +163,31 @@ impl ControllerAgent {
         Ok(result)
     }
     
-    async fn process_with_neural_enhancement(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process_with_neural_enhancement(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Neural processing integration point - placeholder
         // Will be implemented when neural engine is integrated
         Ok(data)
     }
     
-    async fn enhance_text_quality(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn enhance_text_quality(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Text enhancement with neural networks - placeholder
         // Will be implemented when neural engine is integrated
         Ok(data)
     }
     
-    async fn analyze_layout_structure(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn analyze_layout_structure(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Layout analysis with neural networks - placeholder
         // Will be implemented when neural engine is integrated
         Ok(data)
     }
     
-    async fn assess_quality(&self, _data: &[u8]) -> Result<f64, Box<dyn std::error::Error>> {
+    async fn assess_quality(&self, _data: &[u8]) -> Result<f64, Box<dyn std::error::Error + Send + Sync>> {
         // Quality assessment with neural networks - placeholder
         // Will be implemented when neural engine is integrated
         Ok(0.95) // Default quality score
     }
     
-    async fn re_process_for_quality(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn re_process_for_quality(&self, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Re-process with enhanced parameters for >99% accuracy - placeholder
         // Will be implemented when neural engine is integrated
         Ok(data)
@@ -227,7 +198,7 @@ impl ControllerAgent {
     }
     
     /// Process task queue for execution
-    pub async fn process_task_queue(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn process_task_queue(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut processed_tasks = Vec::new();
         
         while let Some(task) = self.task_queue.pop() {
@@ -269,14 +240,14 @@ impl ControllerAgent {
     }
     
     /// Aggregate task result from agent
-    pub async fn aggregate_task_result(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn aggregate_task_result(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // In a real implementation, this would deserialize the result and aggregate it
         eprintln!("Aggregating task result from agent {}", message.from);
         Ok(())
     }
     
     /// Update agent health status
-    pub async fn update_agent_health(&mut self, agent_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn update_agent_health(&mut self, agent_id: Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Updating health status for agent {}", agent_id);
         // In a real implementation, this would update agent health metrics
         Ok(())
@@ -301,19 +272,19 @@ impl DaaAgent for ControllerAgent {
         self.capabilities.clone()
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Ready;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Processing;
         let result = self.orchestrate_pipeline(input).await?;
         self.state = AgentState::Ready;
         Ok(result)
     }
     
-    async fn coordinate(&mut self, _message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, _message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match _message.message_type {
             MessageType::Task => {
                 // Handle task assignment - deserialize task from payload
@@ -343,7 +314,7 @@ impl DaaAgent for ControllerAgent {
         Ok(())
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Completed;
         Ok(())
     }

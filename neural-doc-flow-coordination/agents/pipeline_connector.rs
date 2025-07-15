@@ -174,7 +174,7 @@ impl PipelineConnector {
     }
     
     /// Submit document for processing
-    pub async fn submit_document(&self, request: DocumentProcessingRequest) -> Result<Uuid, Box<dyn std::error::Error>> {
+    pub async fn submit_document(&self, request: DocumentProcessingRequest) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let mut queue = self.document_queue.write().await;
         let mut pipeline = self.processing_pipeline.write().await;
         
@@ -187,14 +187,17 @@ impl PipelineConnector {
         // Update stats
         pipeline.completion_stats.total_requests += 1;
         
+        // Get request_id before moving request
+        let request_id = request.request_id;
+        
         // Start processing
         self.process_document_async(request).await?;
         
-        Ok(request.request_id)
+        Ok(request_id)
     }
     
     /// Process document asynchronously through the pipeline
-    async fn process_document_async(&self, request: DocumentProcessingRequest) -> Result<(), Box<dyn std::error::Error>> {
+    async fn process_document_async(&self, request: DocumentProcessingRequest) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let start_time = std::time::Instant::now();
         let mut agent_contributions = Vec::new();
         let mut current_data = request.document_data.clone();
@@ -279,7 +282,7 @@ impl PipelineConnector {
         stage: &ProcessingStage,
         request: &DocumentProcessingRequest,
         data: Vec<u8>,
-    ) -> Result<(Vec<u8>, Vec<AgentContribution>), Box<dyn std::error::Error>> {
+    ) -> Result<(Vec<u8>, Vec<AgentContribution>), Box<dyn std::error::Error + Send + Sync>> {
         let stage_start = std::time::Instant::now();
         
         // Create processing task
@@ -366,12 +369,12 @@ impl DaaAgent for PipelineConnector {
         self.capabilities.clone()
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Ready;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Processing;
         
         // Create processing request from input
@@ -408,7 +411,7 @@ impl DaaAgent for PipelineConnector {
         }
     }
     
-    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match message.message_type {
             MessageType::Task => {
                 // Handle processing requests
@@ -431,7 +434,7 @@ impl DaaAgent for PipelineConnector {
         Ok(())
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Completed;
         Ok(())
     }

@@ -2,6 +2,8 @@
 /// Builds and manages different network topologies for agent coordination
 
 use super::*;
+use async_trait::async_trait;
+use crate::Topology;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
@@ -15,7 +17,7 @@ pub struct TopologyBuilder {
 }
 
 /// Node type in the topology
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum NodeType {
     Controller,
     Extractor,
@@ -96,7 +98,8 @@ impl TopologyBuilder {
         }
         
         // Connect center node to all other nodes
-        for &node_id in &self.nodes {
+        let nodes_to_connect: Vec<Uuid> = self.nodes.iter().copied().collect();
+        for node_id in nodes_to_connect {
             if node_id != center_node {
                 self.add_connection(center_node, node_id);
             }
@@ -202,9 +205,9 @@ impl TopologyBuilder {
             NodeType::Formatter,
         ];
         
-        for agent_type in agent_types {
+        for node_type in agent_types {
             let agents: Vec<Uuid> = self.node_types.iter()
-                .filter(|(_, node_type)| std::mem::discriminant(node_type) == std::mem::discriminant(&agent_type))
+                .filter(|(_, nt)| std::mem::discriminant(*nt) == std::mem::discriminant(&node_type))
                 .map(|(&id, _)| id)
                 .collect();
             
@@ -245,32 +248,18 @@ impl TopologyBuilder {
             TopologyType::Mesh => {
                 self.build_mesh_topology()?;
             }
-            TopologyType::Ring => {
-                self.build_ring_topology()?;
+            TopologyType::Pipeline => {
+                let stage_order = vec![
+                    NodeType::Controller,
+                    NodeType::Extractor,
+                    NodeType::Enhancer,
+                    NodeType::Validator,
+                    NodeType::Formatter,
+                ];
+                self.build_pipeline_topology(stage_order)?;
             }
-            TopologyType::Tree => {
-                // Build tree topology (simplified as hierarchy)
-                self.build_tree_topology()?;
-            }
-            TopologyType::Custom(ref name) => {
-                match name.as_str() {
-                    "pipeline" => {
-                        let stage_order = vec![
-                            NodeType::Controller,
-                            NodeType::Extractor,
-                            NodeType::Enhancer,
-                            NodeType::Validator,
-                            NodeType::Formatter,
-                        ];
-                        self.build_pipeline_topology(stage_order)?;
-                    }
-                    "hybrid" => {
-                        self.build_hybrid_topology(config)?;
-                    }
-                    _ => {
-                        return Err(format!("Unknown custom topology: {}", name).into());
-                    }
-                }
+            TopologyType::Hybrid => {
+                self.build_hybrid_topology(config)?;
             }
         }
         
@@ -342,17 +331,23 @@ pub struct BuiltTopology {
 
 #[async_trait]
 impl Topology for BuiltTopology {
-    fn topology_type(&self) -> TopologyType {
-        self.topology_type.clone()
+    fn topology_type(&self) -> crate::topology_traits::TopologyType {
+        // Convert from our TopologyType to the trait's TopologyType
+        match self.topology_type {
+            super::TopologyType::Star => crate::topology_traits::TopologyType::Star,
+            super::TopologyType::Mesh => crate::topology_traits::TopologyType::Mesh,
+            super::TopologyType::Pipeline => crate::topology_traits::TopologyType::Custom("Pipeline".to_string()),
+            super::TopologyType::Hybrid => crate::topology_traits::TopologyType::Custom("Hybrid".to_string()),
+        }
     }
     
-    async fn add_node(&mut self, node_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+    async fn add_node(&mut self, node_id: Uuid) -> anyhow::Result<()> {
         self.nodes.insert(node_id);
         self.connections.insert(node_id, HashSet::new());
         Ok(())
     }
     
-    async fn remove_node(&mut self, node_id: Uuid) -> Result<(), Box<dyn std::error::Error>> {
+    async fn remove_node(&mut self, node_id: Uuid) -> anyhow::Result<()> {
         self.nodes.remove(&node_id);
         self.connections.remove(&node_id);
         

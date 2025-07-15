@@ -45,14 +45,14 @@ pub struct StructuralRule {
     pub validator: Arc<dyn StructuralValidator>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ValidationSeverity {
     Error,
     Warning,
     Info,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ValidationResult {
     pub is_valid: bool,
     pub errors: Vec<ValidationError>,
@@ -60,7 +60,7 @@ pub struct ValidationResult {
     pub suggestions: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ValidationError {
     pub rule_name: String,
     pub message: String,
@@ -69,7 +69,7 @@ pub struct ValidationError {
     pub column: Option<usize>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ValidationWarning {
     pub rule_name: String,
     pub message: String,
@@ -257,13 +257,13 @@ impl DaaAgent for ValidatorAgent {
         }
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Set state through BaseAgent's async method
         self.base.set_state(crate::agents::base::AgentState::Ready).await;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.base.set_state(crate::agents::base::AgentState::Processing).await;
         
         // Convert input to string for processing
@@ -278,7 +278,7 @@ impl DaaAgent for ValidatorAgent {
         Ok(serde_json::to_vec(&validation_result)?)
     }
     
-    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match message.message_type {
             MessageType::Task => {
                 // Handle task assignment
@@ -298,7 +298,7 @@ impl DaaAgent for ValidatorAgent {
         }
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.base.set_state(crate::agents::base::AgentState::Ready).await; // Use Ready since there's no Completed state
         Ok(())
     }

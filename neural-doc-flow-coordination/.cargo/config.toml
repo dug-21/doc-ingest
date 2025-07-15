@@ -1,0 +1,42 @@
+# Fast compilation configuration for neural-doc-flow-coordination
+
+[build]
+# Use faster linker
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Optimize for compilation speed in debug builds
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+
+# Fast check profile for development
+[profile.check]
+inherits = "dev"
+debug = false
+debug-assertions = false
+overflow-checks = false
+
+# Optimized but still fast compile for tests
+[profile.test]
+opt-level = 1
+debug = true
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 16
+
+[target.'cfg(any(target_os = "linux", target_os = "macos"))']
+# Use mold linker if available (even faster than lld)
+rustflags = ["-C", "link-arg=-fuse-ld=mold", "-C", "link-arg=-Wl,--threads"]
+
+[unstable]
+# Enable parallel front-end (requires nightly, but speeds up compilation)
+# parallel-front-end = true

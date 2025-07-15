@@ -16,6 +16,12 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 
+// Conditional imports based on features
+#[cfg(feature = "analytics")]
+use std::collections::HashMap;
+#[cfg(feature = "performance")]
+use std::time::Instant;
+
 /// DAA Agent Types for Neural Document Processing
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AgentType {
@@ -56,10 +62,10 @@ pub trait DaaAgent: Send + Sync {
     fn state(&self) -> AgentState;
     fn capabilities(&self) -> AgentCapabilities;
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>>;
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
-    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>>;
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>;
+    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// Coordination Message for inter-agent communication
@@ -83,6 +89,41 @@ pub enum MessageType {
     Coordination,
     Heartbeat,
     Shutdown,
+}
+
+/// Task types for DAA processing
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum TaskType {
+    DocumentExtraction,
+    TextEnhancement,
+    LayoutAnalysis,
+    QualityAssessment,
+    Formatting,
+    Validation,
+}
+
+/// Task status enumeration
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum TaskStatus {
+    Pending,
+    Assigned,
+    InProgress,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+/// Processing task definition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessingTask {
+    pub id: Uuid,
+    pub document_id: String,
+    pub task_type: TaskType,
+    pub priority: u8,
+    pub assigned_agent: Option<Uuid>,
+    pub status: TaskStatus,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub deadline: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// Task result structure
@@ -128,7 +169,8 @@ impl Default for TaskResultAggregator {
     }
 }
 
-/// Global coordination statistics
+/// Global coordination statistics (feature-gated for compilation speed)
+#[cfg(feature = "analytics")]
 #[derive(Debug, Clone)]
 pub struct CoordinationStats {
     pub tasks_completed: u64,
@@ -136,7 +178,14 @@ pub struct CoordinationStats {
     pub average_processing_time: f64,
     pub accuracy_score: f64,
     pub throughput: f64,
-    pub agent_utilization: std::collections::HashMap<Uuid, f64>,
+    pub agent_utilization: HashMap<Uuid, f64>,
+}
+
+#[cfg(not(feature = "analytics"))]
+#[derive(Debug, Clone)]
+pub struct CoordinationStats {
+    pub tasks_completed: u64,
+    pub tasks_failed: u64,
 }
 
 /// Agent Registry for DAA coordination
@@ -146,6 +195,9 @@ pub struct AgentRegistry {
     topology: super::topologies::TopologyType,
     task_queue: Arc<RwLock<Vec<ProcessingTask>>>,
     result_aggregator: Arc<RwLock<TaskResultAggregator>>,
+    #[cfg(feature = "analytics")]
+    coordination_stats: Arc<RwLock<CoordinationStats>>,
+    #[cfg(not(feature = "analytics"))]
     coordination_stats: Arc<RwLock<CoordinationStats>>,
 }
 
@@ -157,31 +209,37 @@ impl AgentRegistry {
             topology,
             task_queue: Arc::new(RwLock::new(Vec::new())),
             result_aggregator: Arc::new(RwLock::new(TaskResultAggregator::default())),
+            #[cfg(feature = "analytics")]
             coordination_stats: Arc::new(RwLock::new(CoordinationStats {
                 tasks_completed: 0,
                 tasks_failed: 0,
                 average_processing_time: 0.0,
                 accuracy_score: 0.0,
                 throughput: 0.0,
-                agent_utilization: std::collections::HashMap::new(),
+                agent_utilization: HashMap::new(),
+            })),
+            #[cfg(not(feature = "analytics"))]
+            coordination_stats: Arc::new(RwLock::new(CoordinationStats {
+                tasks_completed: 0,
+                tasks_failed: 0,
             })),
         }
     }
     
-    pub async fn register_agent(&self, agent: Box<dyn DaaAgent>) -> Result<Uuid, Box<dyn std::error::Error>> {
+    pub async fn register_agent(&self, agent: Box<dyn DaaAgent>) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let id = agent.id();
         let mut agents = self.agents.write().await;
         agents.insert(id, agent);
         Ok(id)
     }
     
-    pub async fn send_message(&self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn send_message(&self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut bus = self.message_bus.write().await;
         bus.push(message);
         Ok(())
     }
     
-    pub async fn process_messages(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn process_messages(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut bus = self.message_bus.write().await;
         let messages = bus.drain(..).collect::<Vec<_>>();
         drop(bus);
@@ -215,7 +273,7 @@ impl AgentRegistry {
     }
     
     /// Distribute task across agents based on topology and capabilities
-    pub async fn distribute_task(&self, task: ProcessingTask) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn distribute_task(&self, task: ProcessingTask) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut task_queue = self.task_queue.write().await;
         let mut aggregator = self.result_aggregator.write().await;
         
@@ -260,7 +318,7 @@ impl AgentRegistry {
     }
     
     /// Find suitable agents for a task type
-    async fn find_suitable_agents(&self, task_type: &TaskType) -> Result<Vec<Uuid>, Box<dyn std::error::Error>> {
+    async fn find_suitable_agents(&self, task_type: &TaskType) -> Result<Vec<Uuid>, Box<dyn std::error::Error + Send + Sync>> {
         let agents = self.agents.read().await;
         let mut suitable_agents = Vec::new();
         
@@ -286,7 +344,7 @@ impl AgentRegistry {
     }
     
     /// Aggregate results from multiple agents
-    pub async fn aggregate_results(&self, task_id: Uuid) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    pub async fn aggregate_results(&self, task_id: Uuid) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         let aggregator = self.result_aggregator.read().await;
         
         if let Some(result) = aggregator.completed_results.get(&task_id) {
@@ -297,7 +355,7 @@ impl AgentRegistry {
     }
     
     /// Handle task result from an agent
-    pub async fn handle_task_result(&self, result: TaskResult) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn handle_task_result(&self, result: TaskResult) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut aggregator = self.result_aggregator.write().await;
         let mut stats = self.coordination_stats.write().await;
         
@@ -316,7 +374,7 @@ impl AgentRegistry {
                 stats.average_processing_time = (stats.average_processing_time + result.processing_time) / 2.0;
                 
                 // Update agent utilization
-                let current_util = stats.agent_utilization.get(&result.agent_id).unwrap_or(&0.0);
+                let current_util = *stats.agent_utilization.get(&result.agent_id).unwrap_or(&0.0);
                 stats.agent_utilization.insert(result.agent_id, current_util + result.processing_time);
                 
                 // Remove from pending
@@ -333,9 +391,18 @@ impl AgentRegistry {
         !execution_state.completed_stages.is_empty()
     }
     
-    /// Get coordination statistics
+    /// Get coordination statistics (feature-gated)
+    #[cfg(feature = "analytics")]
     pub async fn get_coordination_stats(&self) -> CoordinationStats {
         self.coordination_stats.read().await.clone()
+    }
+    
+    #[cfg(not(feature = "analytics"))]
+    pub async fn get_coordination_stats(&self) -> CoordinationStats {
+        CoordinationStats {
+            tasks_completed: 0,
+            tasks_failed: 0,
+        }
     }
 }
 

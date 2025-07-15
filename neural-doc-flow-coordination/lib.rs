@@ -1,20 +1,42 @@
 /// DAA Neural Coordination Library
 /// High-performance distributed agent architecture for neural document processing
 
+// Core modules - always compiled
 pub mod agents;
 pub mod topologies;
+
+// Feature-gated modules for faster compilation
+#[cfg(feature = "messaging")]
 pub mod messaging;
-pub mod resources;
+
+#[cfg(feature = "fault-tolerance")]
 pub mod fault_tolerance;
 
+pub mod resources;
+
+// Include modules from src directory
+#[path = "src/consensus.rs"]
+pub mod consensus;
+#[path = "src/topology.rs"]
+pub mod topology_traits;
+pub use topology_traits::Topology;
+
+// Core exports
 pub use agents::*;
 pub use topologies::*;
+
+// Feature-gated exports
+#[cfg(feature = "messaging")]
 pub use messaging::*;
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+
+// Conditional imports for feature-gated functionality
+#[cfg(feature = "analytics")]
+use std::collections::HashMap;
 
 /// Agent capabilities enum
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -34,8 +56,14 @@ pub enum AgentCapability {
 pub struct DaaCoordinationSystem {
     pub agent_registry: Arc<agents::AgentRegistry>,
     pub topology_manager: Arc<RwLock<topologies::TopologyManager>>,
+    #[cfg(feature = "messaging")]
+    pub message_bus: Arc<messaging::MessageBus>,
+    #[cfg(not(feature = "messaging"))]
     pub message_bus: Arc<messaging::MessageBus>,
     pub config: CoordinationConfig,
+    #[cfg(feature = "monitoring")]
+    pub performance_monitor: Arc<RwLock<PerformanceMonitor>>,
+    #[cfg(not(feature = "monitoring"))]
     pub performance_monitor: Arc<RwLock<PerformanceMonitor>>,
 }
 
@@ -102,13 +130,19 @@ impl DaaCoordinationSystem {
             topologies::TopologyManager::new(topology_config)
         ));
         
+        #[cfg(feature = "messaging")]
         let message_bus = Arc::new(messaging::MessageBus::new(config.topology_type.clone()));
+        #[cfg(not(feature = "messaging"))]
+        let message_bus = Arc::new(messaging::MessageBus::new());
         
         Ok(Self {
             agent_registry,
             topology_manager,
             message_bus,
             config,
+            #[cfg(feature = "monitoring")]
+            performance_monitor: Arc::new(RwLock::new(PerformanceMonitor::default())),
+            #[cfg(not(feature = "monitoring"))]
             performance_monitor: Arc::new(RwLock::new(PerformanceMonitor::default())),
         })
     }
@@ -132,7 +166,8 @@ impl DaaCoordinationSystem {
         //     topology.add_agent(agent_id, agent_type.clone())?;
         // }
         
-        // Update performance monitoring
+        // Update performance monitoring (if enabled)
+        #[cfg(feature = "monitoring")]
         {
             let mut monitor = self.performance_monitor.write().await;
             monitor.agent_utilization.insert(agent_id, 0.0);
@@ -336,12 +371,19 @@ impl DaaCoordinationSystem {
         }
     }
     
-    /// Get system performance metrics
+    /// Get system performance metrics (feature-gated)
+    #[cfg(feature = "monitoring")]
     pub async fn get_performance_metrics(&self) -> PerformanceMonitor {
         self.performance_monitor.read().await.clone()
     }
     
-    /// Optimize system performance
+    #[cfg(not(feature = "monitoring"))]
+    pub async fn get_performance_metrics(&self) -> PerformanceMonitor {
+        PerformanceMonitor::default()
+    }
+    
+    /// Optimize system performance (feature-gated)
+    #[cfg(feature = "performance")]
     pub async fn optimize_performance(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Optimize topology
         {
@@ -350,9 +392,11 @@ impl DaaCoordinationSystem {
         }
         
         // Optimize message routing
+        #[cfg(feature = "messaging")]
         self.message_bus.optimize_routing().await?;
         
         // Update performance metrics
+        #[cfg(feature = "monitoring")]
         {
             let mut monitor = self.performance_monitor.write().await;
             monitor.coordination_efficiency = 0.95; // Simulated improvement
@@ -361,7 +405,14 @@ impl DaaCoordinationSystem {
         Ok(())
     }
     
-    /// Auto-scale agents based on load
+    #[cfg(not(feature = "performance"))]
+    pub async fn optimize_performance(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // No-op for minimal builds
+        Ok(())
+    }
+    
+    /// Auto-scale agents based on load (feature-gated)
+    #[cfg(all(feature = "monitoring", feature = "performance"))]
     pub async fn auto_scale(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let performance = self.performance_monitor.read().await;
         
@@ -386,6 +437,12 @@ impl DaaCoordinationSystem {
             monitor.auto_scaling_events += 1;
         }
         
+        Ok(())
+    }
+    
+    #[cfg(not(all(feature = "monitoring", feature = "performance")))]
+    pub async fn auto_scale(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // No-op for builds without monitoring and performance features
         Ok(())
     }
     

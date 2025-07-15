@@ -2,7 +2,7 @@
 /// Integrates consensus mechanisms with agent coordination for distributed decision making
 
 use super::*;
-use crate::consensus::{ConsensusEngine, ConsensusAlgorithm, ConsensusResult};
+use crate::consensus::{ConsensusEngine, ConsensusAlgorithm, ConsensusResult, ProposalStatus};
 use std::collections::HashMap;
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
@@ -84,7 +84,7 @@ impl ConsensusCoordinator {
         participating_agents: Vec<Uuid>,
         deadline: chrono::DateTime<chrono::Utc>,
         min_threshold: f64,
-    ) -> Result<Uuid, Box<dyn std::error::Error>> {
+    ) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let decision_id = Uuid::new_v4();
         
         // Create decision context
@@ -118,7 +118,7 @@ impl ConsensusCoordinator {
         agent_id: Uuid,
         vote: bool,
         justification: Option<String>,
-    ) -> Result<Option<ConsensusDecision>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<ConsensusDecision>, Box<dyn std::error::Error + Send + Sync>> {
         if let Some(decision_context) = self.active_decisions.get(&decision_id) {
             // Check if agent is authorized to vote
             if !decision_context.participating_agents.contains(&agent_id) {
@@ -140,7 +140,7 @@ impl ConsensusCoordinator {
                 let decision = ConsensusDecision {
                     decision_id,
                     decision_type: decision_context.decision_type.clone(),
-                    approved: matches!(consensus_result.status, crate::consensus::ProposalStatus::Accepted),
+                    approved: matches!(consensus_result.status, ProposalStatus::Accepted),
                     final_proposal: decision_context.proposal.clone(),
                     consensus_score: consensus_result.total_weight,
                     participating_agents: decision_context.participating_agents.clone(),
@@ -163,14 +163,14 @@ impl ConsensusCoordinator {
     }
     
     /// Check consensus status for a decision
-    async fn check_consensus_status(&self, decision_id: Uuid) -> Result<Option<ConsensusResult>, Box<dyn std::error::Error>> {
+    async fn check_consensus_status(&self, decision_id: Uuid) -> Result<Option<ConsensusResult>, Box<dyn std::error::Error + Send + Sync>> {
         // This would integrate with the consensus engine to check status
         // For now, return None indicating no consensus yet
         Ok(None)
     }
     
     /// Execute a consensus decision
-    async fn execute_consensus_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_consensus_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match decision.decision_type {
             DecisionType::TaskAssignment => {
                 self.execute_task_assignment_decision(decision).await?;
@@ -199,49 +199,49 @@ impl ConsensusCoordinator {
     }
     
     /// Execute task assignment decision
-    async fn execute_task_assignment_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_task_assignment_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing task assignment decision: {:?}", decision.decision_id);
         // Implementation would assign tasks based on consensus decision
         Ok(())
     }
     
     /// Execute quality threshold decision
-    async fn execute_quality_threshold_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_quality_threshold_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing quality threshold decision: {:?}", decision.decision_id);
         // Implementation would update quality thresholds based on consensus
         Ok(())
     }
     
     /// Execute processing strategy decision
-    async fn execute_processing_strategy_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_processing_strategy_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing processing strategy decision: {:?}", decision.decision_id);
         // Implementation would change processing strategy based on consensus
         Ok(())
     }
     
     /// Execute resource allocation decision
-    async fn execute_resource_allocation_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_resource_allocation_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing resource allocation decision: {:?}", decision.decision_id);
         // Implementation would reallocate resources based on consensus
         Ok(())
     }
     
     /// Execute error handling decision
-    async fn execute_error_handling_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_error_handling_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing error handling decision: {:?}", decision.decision_id);
         // Implementation would update error handling based on consensus
         Ok(())
     }
     
     /// Execute agent promotion decision
-    async fn execute_agent_promotion_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_agent_promotion_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing agent promotion decision: {:?}", decision.decision_id);
         // Implementation would promote agents based on consensus
         Ok(())
     }
     
     /// Execute system reconfiguration decision
-    async fn execute_system_reconfiguration_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error>> {
+    async fn execute_system_reconfiguration_decision(&mut self, decision: &ConsensusDecision) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         eprintln!("Executing system reconfiguration decision: {:?}", decision.decision_id);
         // Implementation would reconfigure system based on consensus
         Ok(())
@@ -253,14 +253,14 @@ impl ConsensusCoordinator {
         agent_id: Uuid,
         decision_id: Uuid,
         decision_type: DecisionType,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // This would send a coordination message to the agent requesting a vote
         eprintln!("Sending voting request to agent {} for decision {:?}", agent_id, decision_id);
         Ok(())
     }
     
     /// Clean up expired decisions
-    pub async fn cleanup_expired_decisions(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn cleanup_expired_decisions(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let current_time = chrono::Utc::now();
         let expired_decisions: Vec<Uuid> = self.active_decisions
             .iter()
@@ -295,12 +295,12 @@ impl DaaAgent for ConsensusCoordinator {
         self.capabilities.clone()
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Ready;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Processing;
         
         // Process consensus coordination requests
@@ -310,7 +310,7 @@ impl DaaAgent for ConsensusCoordinator {
         Ok(input)
     }
     
-    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, message: CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match message.message_type {
             MessageType::Coordination => {
                 // Handle consensus coordination messages
@@ -334,7 +334,7 @@ impl DaaAgent for ConsensusCoordinator {
         Ok(())
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.state = AgentState::Completed;
         Ok(())
     }

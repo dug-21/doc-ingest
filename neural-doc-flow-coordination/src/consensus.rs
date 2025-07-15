@@ -1,6 +1,6 @@
 //! Consensus mechanisms for distributed coordination
 
-use neural_doc_flow_core::Result;
+use anyhow::Result;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
@@ -128,45 +128,61 @@ impl ConsensusEngine {
     
     /// Check if consensus is reached for a proposal
     fn check_consensus(&mut self, proposal_id: Uuid) -> Result<Option<ConsensusResult>> {
-        if let Some(proposal) = self.active_proposals.get_mut(&proposal_id) {
-            let total_votes = proposal.votes.len();
-            let mut votes_for = 0;
-            let mut votes_against = 0;
-            let mut total_weight = 0.0;
-            let mut weight_for = 0.0;
-            
-            for vote in proposal.votes.values() {
-                total_weight += vote.weight;
-                if vote.support {
-                    votes_for += 1;
-                    weight_for += vote.weight;
+        // First, gather information from the proposal
+        let (consensus_reached, should_reject, votes_for, votes_against, total_weight) = {
+            if let Some(proposal) = self.active_proposals.get(&proposal_id) {
+                let total_votes = proposal.votes.len();
+                let mut votes_for = 0;
+                let mut votes_against = 0;
+                let mut total_weight = 0.0;
+                let mut weight_for = 0.0;
+                
+                for vote in proposal.votes.values() {
+                    total_weight += vote.weight;
+                    if vote.support {
+                        votes_for += 1;
+                        weight_for += vote.weight;
+                    } else {
+                        votes_against += 1;
+                    }
+                }
+                
+                let consensus_reached = match self.algorithm {
+                    ConsensusAlgorithm::Majority => {
+                        if total_votes > 0 {
+                            (votes_for as f64 / total_votes as f64) > self.threshold
+                        } else {
+                            false
+                        }
+                    }
+                    ConsensusAlgorithm::Unanimous => votes_against == 0 && votes_for > 0,
+                    ConsensusAlgorithm::WeightedVoting => {
+                        if total_weight > 0.0 {
+                            (weight_for / total_weight) > self.threshold
+                        } else {
+                            false
+                        }
+                    }
+                    _ => false,
+                };
+                
+                let should_reject = if !consensus_reached {
+                    self.should_reject(proposal)
                 } else {
-                    votes_against += 1;
-                }
+                    false
+                };
+                
+                (consensus_reached, should_reject, votes_for, votes_against, total_weight)
+            } else {
+                return Err(anyhow::anyhow!("Proposal not found"));
             }
-            
-            let consensus_reached = match self.algorithm {
-                ConsensusAlgorithm::Majority => {
-                    if total_votes > 0 {
-                        (votes_for as f64 / total_votes as f64) > self.threshold
-                    } else {
-                        false
-                    }
-                }
-                ConsensusAlgorithm::Unanimous => votes_against == 0 && votes_for > 0,
-                ConsensusAlgorithm::WeightedVoting => {
-                    if total_weight > 0.0 {
-                        (weight_for / total_weight) > self.threshold
-                    } else {
-                        false
-                    }
-                }
-                _ => false,
-            };
-            
+        };
+        
+        // Now update the proposal with mutable access
+        if let Some(proposal) = self.active_proposals.get_mut(&proposal_id) {
             if consensus_reached {
                 proposal.status = ProposalStatus::Accepted;
-            } else if self.should_reject(proposal) {
+            } else if should_reject {
                 proposal.status = ProposalStatus::Rejected;
             }
             

@@ -26,7 +26,7 @@ pub trait FormatHandler: Send + Sync {
     fn handler_name(&self) -> &str;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FormattedContent {
     pub original: String,
     pub formatted: String,
@@ -324,13 +324,13 @@ impl DaaAgent for FormatterAgent {
         }
     }
     
-    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Set state through BaseAgent's async method
         self.base.set_state(crate::agents::base::AgentState::Ready).await;
         Ok(())
     }
     
-    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn process(&mut self, input: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         self.base.set_state(crate::agents::base::AgentState::Processing).await;
         
         // Convert input to string for processing
@@ -345,7 +345,7 @@ impl DaaAgent for FormatterAgent {
         Ok(formatted_content.formatted.into_bytes())
     }
     
-    async fn coordinate(&mut self, message: super::CoordinationMessage) -> Result<(), Box<dyn std::error::Error>> {
+    async fn coordinate(&mut self, message: super::CoordinationMessage) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match message.message_type {
             super::MessageType::Task => {
                 // Handle task assignment
@@ -365,7 +365,7 @@ impl DaaAgent for FormatterAgent {
         }
     }
     
-    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.base.set_state(crate::agents::base::AgentState::Ready).await; // Use Ready since there's no Completed state
         Ok(())
     }
@@ -447,7 +447,7 @@ impl FormatterAgent {
     }
     
     async fn shutdown(&mut self) -> Result<()> {
-        self.base.set_state(AgentState::Shutting_down).await;
+        self.base.set_state(AgentState::ShuttingDown).await;
         Ok(())
     }
     
@@ -465,7 +465,7 @@ impl FormatterAgent {
                 Ok(())
             }
             CoordinationMessage::Shutdown => {
-                self.base.set_state(AgentState::Shutting_down).await;
+                self.base.set_state(AgentState::ShuttingDown).await;
                 Ok(())
             }
             _ => Ok(())
