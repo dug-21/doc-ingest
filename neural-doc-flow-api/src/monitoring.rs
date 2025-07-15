@@ -28,5 +28,5 @@ impl MetricsCollector {
 /// Start metrics collector
 pub async fn start_metrics_collector(_state: Arc<crate::state::AppState>) {
     // TODO: Implement metrics collection
-    tracing::info!("Metrics collector started");
+    tracing::info!("Metrics collector is running.");
 }

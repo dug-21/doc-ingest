@@ -3,27 +3,27 @@
 //! This module contains the core neural processing implementations
 //! using ruv-FANN for document enhancement and analysis.
 
-pub mod engine;
+//pub mod engine;
 pub mod simple_neural;
 pub mod fann_processor;
 
 use crate::{
     config::ModelType,
     error::{NeuralError, Result},
-    traits::{NeuralProcessorTrait, NeuralInference, FeatureExtractor},
+    traits::{NeuralInference, FeatureExtractor},
     types::{ContentBlock, NeuralFeatures, ConfidenceScore},
 };
-
-// Export neural processors
-pub use simple_neural::SimpleNeuralProcessor;
-pub use fann_processor::FannNeuralProcessor;
-pub use engine::NeuralEngine;
 
 #[cfg(feature = "neural")]
 use ruv_fann::Network;
 
+// Export neural processors
+pub use simple_neural::SimpleNeuralProcessor;
+pub use fann_processor::FannNeuralProcessor;
+//pub use engine::NeuralEngine;
+
 #[cfg(feature = "neural")]
-type Fann = Network<f32>;
+type Fann = ruv_fann::Network<f32>;
 
 #[cfg(not(feature = "neural"))]
 type Fann = ();
@@ -287,19 +287,39 @@ impl NetworkFactory {
         
         let network = match config.network_type {
             NetworkType::Standard => {
-                Network::<f32>::new(&layers)
+                {
+                    #[cfg(feature = "neural")]
+                    { Network::<f32>::new(&layers) }
+                    #[cfg(not(feature = "neural"))]
+                    { () }
+                }
             }
             NetworkType::Sparse => {
                 // For now, create a standard network - sparse implementation may need different API
-                Network::<f32>::new(&layers)
+                {
+                    #[cfg(feature = "neural")]
+                    { Network::<f32>::new(&layers) }
+                    #[cfg(not(feature = "neural"))]
+                    { () }
+                }
             }
             NetworkType::Shortcut => {
-                Network::<f32>::new(&layers)
+                {
+                    #[cfg(feature = "neural")]
+                    { Network::<f32>::new(&layers) }
+                    #[cfg(not(feature = "neural"))]
+                    { () }
+                }
             }
             NetworkType::Cascade => {
                 // Cascade networks are created differently in ruv-FANN
                 // For now, create a standard network and note this limitation
-                Network::<f32>::new(&layers)
+                {
+                    #[cfg(feature = "neural")]
+                    { Network::<f32>::new(&layers) }
+                    #[cfg(not(feature = "neural"))]
+                    { () }
+                }
             }
         };
 

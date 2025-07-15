@@ -39,7 +39,7 @@ pub trait ProcessorPipeline: Send + Sync {
 
 /// Individual processor trait
 #[async_trait]
-pub trait Processor: Send + Sync {
+pub trait Processor: Send + Sync + std::fmt::Debug {
     /// Get processor name
     fn name(&self) -> &str;
     

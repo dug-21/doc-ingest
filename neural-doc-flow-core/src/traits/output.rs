@@ -1,6 +1,7 @@
 //! Output formatting trait definitions
 
 use crate::{Document, OutputResult};
+use crate::engine::OutputTemplate;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -28,6 +29,11 @@ pub trait OutputFormatter: Send + Sync {
     
     /// Validate format options
     fn validate_options(&self, options: &FormatOptions) -> OutputResult<()>;
+    
+    /// Register a custom template (default implementation does nothing)
+    fn register_template(&mut self, _template: OutputTemplate) {
+        // Default implementation for formatters that don't support templates
+    }
     
     /// Get supported output formats
     fn supported_formats(&self) -> Vec<OutputFormat>;

@@ -198,7 +198,7 @@ impl AsyncNeuralPipeline {
         
         // Acquire semaphore permit
         let _permit = self.semaphore.acquire().await
-            .map_err(|e| NeuralError::ProcessingFailed(format!("Failed to acquire semaphore: {}", e)))?;
+            .map_err(|e| NeuralError::Inference(format!("Failed to acquire semaphore: {}", e)))?;
         
         // Apply domain configuration if specified
         let processor = if let Some(domain) = &context.domain {
@@ -280,7 +280,7 @@ impl AsyncNeuralPipeline {
             // Convert to document for DAA processing
             let document = self.content_block_to_document(block)?;
             daa_processor.process_document(document).await
-                .map_err(|e| NeuralError::ProcessingFailed(format!("DAA processing failed: {}", e)))
+                .map_err(|e| NeuralError::Inference(format!("DAA processing failed: {}", e)))
         } else {
             // Process with FANN processor
             self.processor.enhance_content(vec![block.clone()]).await
@@ -345,14 +345,62 @@ impl AsyncNeuralPipeline {
     
     /// Convert content block to document
     fn content_block_to_document(&self, block: &ContentBlock) -> Result<neural_doc_flow_core::Document> {
+        use uuid::Uuid;
+        use neural_doc_flow_core::{DocumentType, DocumentSourceType, DocumentStructure};
+        
         // Create a minimal document from content block
+        let document_id = if let Ok(uuid) = Uuid::parse_str(&block.id) {
+            uuid
+        } else {
+            Uuid::new_v4()
+        };
+        
+        let content = neural_doc_flow_core::DocumentContent {
+            text: block.text.clone(),
+            images: Vec::new(),
+            tables: Vec::new(),
+            structured: std::collections::HashMap::new(),
+            raw: None,
+        };
+        
+        let metadata = neural_doc_flow_core::DocumentMetadata {
+            title: block.metadata.get("title").cloned(),
+            authors: block.metadata.get("author")
+                .map(|s| vec![s.clone()])
+                .unwrap_or_default(),
+            source: block.metadata.get("source")
+                .cloned()
+                .unwrap_or_else(|| "neural_processor".to_string()),
+            mime_type: block.metadata.get("mime_type")
+                .cloned()
+                .unwrap_or_else(|| "text/plain".to_string()),
+            size: block.metadata.get("file_size")
+                .and_then(|s| s.parse().ok()),
+            language: block.metadata.get("language").cloned(),
+            custom: block.metadata.iter()
+                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+                .collect(),
+        };
+        
+        let structure = DocumentStructure {
+            page_count: block.metadata.get("page_count")
+                .and_then(|s| s.parse().ok()),
+            sections: Vec::new(),
+            toc_entries: Vec::new(),
+        };
+        
         let document = neural_doc_flow_core::Document {
-            id: block.id.clone(),
-            content: block.text.clone().unwrap_or_default(),
-            metadata: block.metadata.clone(),
+            id: document_id,
+            doc_type: DocumentType::Text,
+            source_type: DocumentSourceType::Upload,
+            raw_content: Vec::new(),
+            metadata,
+            content,
+            structure,
+            attachments: Vec::new(),
+            processing_history: Vec::new(),
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
-            version: 1,
         };
         
         Ok(document)
@@ -401,7 +449,7 @@ impl AsyncNeuralPipeline {
                     }
                 },
                 Err(_timeout) => {
-                    last_error = Some(NeuralError::ProcessingFailed("Processing timeout".to_string()));
+                    last_error = Some(NeuralError::Inference("Processing timeout".to_string()));
                     if attempts < retry_config.max_attempts {
                         let delay = retry_config.initial_delay * (retry_config.backoff_multiplier.powi(attempts as i32 - 1) as u32);
                         let delay = delay.min(retry_config.max_delay);
@@ -411,7 +459,7 @@ impl AsyncNeuralPipeline {
             }
         }
         
-        Err(last_error.unwrap_or_else(|| NeuralError::ProcessingFailed("Max retry attempts exceeded".to_string())))
+        Err(last_error.unwrap_or_else(|| NeuralError::Inference("Max retry attempts exceeded".to_string())))
     }
     
     /// Shutdown the pipeline

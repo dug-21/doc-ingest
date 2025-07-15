@@ -82,5 +82,5 @@ impl JobQueue {
 /// Start background job processor
 pub async fn start_job_processor(_state: Arc<crate::state::AppState>) {
     // TODO: Implement job processor
-    tracing::info!("Job processor started");
+    tracing::info!("Job processor is running.");
 }

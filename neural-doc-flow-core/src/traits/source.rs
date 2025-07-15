@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 /// Core trait for document sources - exactly as specified in iteration5
 #[async_trait]
-pub trait DocumentSource: Send + Sync {
+pub trait DocumentSource: Send + Sync + std::fmt::Debug {
     /// Get the source type identifier
     fn source_type(&self) -> &'static str;
     
@@ -104,7 +104,7 @@ pub enum ValidationSeverity {
 }
 
 /// Factory trait for creating document sources
-pub trait DocumentSourceFactory: Send + Sync {
+pub trait DocumentSourceFactory: Send + Sync + std::fmt::Debug {
     /// Create a new document source instance
     fn create_source(&self, config: &SourceConfig) -> SourceResult<Box<dyn DocumentSource>>;
     

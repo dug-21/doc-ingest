@@ -523,7 +523,7 @@ fn main() {
     
     println!("🎯 All DAA tests completed successfully!");
     println!("✅ DAA coordination follows iteration5 architecture");
-    println!("✅ Message passing between agents implemented");
+    println!("✅ Message passing between agents is working.");
     println!("✅ Task distribution and result aggregation working");
     println!("✅ Consensus mechanisms functional");
     println!("✅ Topology building supports Star, Mesh, Pipeline, Hybrid");

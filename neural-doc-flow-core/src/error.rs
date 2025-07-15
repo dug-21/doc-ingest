@@ -182,6 +182,9 @@ pub enum OutputError {
 
     #[error("Output validation failed: {reason}")]
     ValidationFailed { reason: String },
+
+    #[error("Processing error: {0}")]
+    ProcessingError(#[from] ProcessingError),
 }
 
 /// Result type alias for convenience
@@ -218,6 +221,33 @@ impl From<nix::errno::Errno> for ProcessingError {
     fn from(err: nix::errno::Errno) -> Self {
         ProcessingError::ProcessorFailed {
             processor_name: "sandbox".to_string(),
+            reason: err.to_string(),
+        }
+    }
+}
+
+// Error conversion implementations for cross-type compatibility
+impl From<SourceError> for ProcessingError {
+    fn from(err: SourceError) -> Self {
+        ProcessingError::ProcessorFailed {
+            processor_name: "source".to_string(),
+            reason: err.to_string(),
+        }
+    }
+}
+
+impl From<OutputError> for ProcessingError {
+    fn from(err: OutputError) -> Self {
+        ProcessingError::ProcessorFailed {
+            processor_name: "output".to_string(),
+            reason: err.to_string(),
+        }
+    }
+}
+
+impl From<ProcessingError> for SourceError {
+    fn from(err: ProcessingError) -> Self {
+        SourceError::ParseError {
             reason: err.to_string(),
         }
     }

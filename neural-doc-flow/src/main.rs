@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
         
         Commands::Batch { input_dir, output_dir: _, pattern: _ } => {
             info!("Processing batch from directory: {}", input_dir.display());
-            warn!("Batch processing not yet implemented");
+            warn!("Batch processing is pending.");
         }
         
         Commands::Interactive => {

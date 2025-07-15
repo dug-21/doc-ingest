@@ -5,7 +5,7 @@
 use crate::{
     traits::{DocumentSource, source::{DocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity}},
     document::{Document, DocumentBuilder},
-    error::ProcessingError,
+    error::{ProcessingError, SourceError},
     SourceResult,
 };
 use async_trait::async_trait;
@@ -56,7 +56,7 @@ impl PDFSource {
     }
     
     /// Validate PDF file structure
-    async fn validate_pdf(&self, pdf_data: &[u8]) -> Result<ValidationResult, ProcessingError> {
+    async fn validate_pdf(&self, pdf_data: &[u8]) -> Result<ValidationResult, SourceError> {
         let mut validation_result = ValidationResult::success();
         
         // Check PDF header
@@ -137,9 +137,9 @@ impl DocumentSource for PDFSource {
         // Validate PDF
         let validation_result = self.validate_pdf(&pdf_data).await?;
         if validation_result.has_critical_issues() {
-            return Err(ProcessingError::ValidationError(
-                format!("PDF validation failed: {:?}", validation_result.issues)
-            ));
+            return Err(SourceError::ParseError {
+                reason: format!("PDF validation failed: {:?}", validation_result.issues)
+            });
         }
         
         // Extract text content
@@ -153,9 +153,7 @@ impl DocumentSource for PDFSource {
             .source("pdf_source")
             .mime_type("application/pdf")
             .size(pdf_data.len() as u64)
-            .with_text_content(text_content)
-            .with_raw_content(pdf_data)
-            .with_custom_metadata(custom_metadata)
+            .text_content(text_content)
             .build();
         
         Ok(document)

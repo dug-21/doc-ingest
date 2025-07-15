@@ -5,7 +5,7 @@
 use crate::{
     traits::{DocumentSource, source::{DocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity}},
     document::{Document, DocumentBuilder},
-    error::ProcessingError,
+    error::{ProcessingError, SourceError},
     SourceResult,
 };
 use async_trait::async_trait;
@@ -89,7 +89,7 @@ impl ImageSource {
     }
     
     /// Validate image file structure
-    async fn validate_image(&self, image_data: &[u8]) -> Result<ValidationResult, ProcessingError> {
+    async fn validate_image(&self, image_data: &[u8]) -> Result<ValidationResult, SourceError> {
         let mut validation_result = ValidationResult::success();
         
         // Check minimum file size
@@ -190,9 +190,9 @@ impl DocumentSource for ImageSource {
         // Validate image
         let validation_result = self.validate_image(&image_data).await?;
         if validation_result.has_critical_issues() {
-            return Err(ProcessingError::ValidationError(
-                format!("Image validation failed: {:?}", validation_result.issues)
-            ));
+            return Err(SourceError::ParseError {
+                reason: format!("Image validation failed: {:?}", validation_result.issues)
+            });
         }
         
         // Extract text content using OCR
@@ -210,9 +210,6 @@ impl DocumentSource for ImageSource {
             .source("image_source")
             .mime_type(mime_type)
             .size(image_data.len() as u64)
-            .with_text_content(text_content)
-            .with_raw_content(image_data)
-            .with_custom_metadata(custom_metadata)
             .build();
         
         Ok(document)

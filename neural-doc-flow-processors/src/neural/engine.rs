@@ -149,7 +149,7 @@ impl NeuralEngine {
         &self,
         model_type: ModelType,
         layers: &[u32],
-        network_type: NetworkType,
+        _network_type: NetworkType,
     ) -> Result<()> {
         debug!("Creating new neural network for {}", model_type);
         
@@ -165,6 +165,7 @@ impl NeuralEngine {
         
         #[cfg(not(feature = "neural"))]
         {
+            let _layers = layers; // silence unused warning
             let mut networks = self.networks.write().unwrap();
             networks.insert(model_type, Arc::new(Mutex::new(())));
         }
@@ -192,15 +193,15 @@ impl NeuralEngine {
         // Convert training data to ruv-FANN format
         let train_data = self.prepare_training_data(training_data)?;
         
-        // Training in separate task to avoid blocking
+        // Training in async context
         #[cfg(feature = "neural")]
-        let training_result = tokio::task::spawn_blocking(move || {
-            let mut network = network_arc.blocking_lock();
+        let training_result = {
+            let mut network = network_arc.lock().await;
             
             // Configure training
             network.set_training_algorithm(TrainingAlgorithm::RProp);
-            network.set_activation_function_hidden(ActivationFunction::Sigmoid);
-            network.set_activation_function_output(ActivationFunction::Linear);
+            network.set_activation_function_hidden(ActivationFunc::Sigmoid);
+            network.set_activation_function_output(ActivationFunc::Linear);
             
             // Simple training loop for ruv-FANN
             let mut error = 1.0;
@@ -221,10 +222,8 @@ impl NeuralEngine {
                 }
             }
             
-            Ok(error)
-        }).await
-        .map_err(|e| NeuralError::Training(format!("Training task failed: {}", e)))?
-        .map_err(|e| NeuralError::Training(format!("ruv-FANN training error: {}", e)))?;
+            error
+        };
         
         #[cfg(not(feature = "neural"))]
         let training_result = 0.01; // Mock training result
@@ -253,12 +252,11 @@ impl NeuralEngine {
         let path = path.to_string();
         
         #[cfg(feature = "neural")]
-        tokio::task::spawn_blocking(move || {
-            let network = network_arc.blocking_lock();
+        {
+            let network = network_arc.lock().await;
             network.save(&path)
-        }).await
-        .map_err(|e| NeuralError::ModelSave(format!("Save task failed: {}", e)))?
-        .map_err(|e| NeuralError::ModelSave(format!("ruv-FANN save error: {}", e)))?;
+                .map_err(|e| NeuralError::ModelSave(format!("ruv-FANN save error: {}", e)))?;
+        }
         
         #[cfg(not(feature = "neural"))]
         {
@@ -380,18 +378,17 @@ impl NeuralProcessorTrait for NeuralEngine {
         
         let input_data = features.layout_features.clone();
         
-        let output = tokio::task::spawn_blocking(move || {
+        let output = {
             #[cfg(feature = "neural")]
             {
-                let mut network = network_arc.blocking_lock();
+                let network = network_arc.lock().await;
                 network.run(&input_data)
             }
             #[cfg(not(feature = "neural"))]
             {
                 vec![0.8, 0.9, 0.7, 0.6] // Mock output
             }
-        }).await
-        .map_err(|e| NeuralError::Inference(format!("Layout analysis task failed: {}", e)))?;
+        };
         
         Ok(LayoutAnalysis {
             document_structure: self.interpret_layout_output(&output)?,
@@ -409,18 +406,17 @@ impl NeuralProcessorTrait for NeuralEngine {
         
         let input_data = features.table_features.clone();
         
-        let output = tokio::task::spawn_blocking(move || {
+        let output = {
             #[cfg(feature = "neural")]
             {
-                let mut network = network_arc.blocking_lock();
+                let network = network_arc.lock().await;
                 network.run(&input_data)
             }
             #[cfg(not(feature = "neural"))]
             {
                 vec![0.85, 3.0, 4.0, 0.9] // Mock output
             }
-        }).await
-        .map_err(|e| NeuralError::Inference(format!("Table detection task failed: {}", e)))?;
+        };
         
         Ok(self.interpret_table_output(&output)?)
     }
@@ -434,18 +430,17 @@ impl NeuralProcessorTrait for NeuralEngine {
         // Extract quality features from enhanced content
         let quality_features = self.extract_quality_features(content)?;
         
-        let output = tokio::task::spawn_blocking(move || {
+        let output = {
             #[cfg(feature = "neural")]
             {
-                let mut network = network_arc.blocking_lock();
+                let network = network_arc.lock().await;
                 network.run(&quality_features)
             }
             #[cfg(not(feature = "neural"))]
             {
                 vec![0.94, 0.91, 0.88, 0.92] // Mock output
             }
-        }).await
-        .map_err(|e| NeuralError::Inference(format!("Quality assessment task failed: {}", e)))?;
+        };
         
         Ok(ConfidenceScore {
             overall: output.get(0).copied().unwrap_or(0.0),
@@ -469,18 +464,17 @@ impl NeuralEngine {
                 let network_arc = network_arc.clone();
                 let input_data = features.text_features;
                 
-                let output = tokio::task::spawn_blocking(move || {
+                let output = {
                     #[cfg(feature = "neural")]
                     {
-                        let mut network = network_arc.blocking_lock();
+                        let network = network_arc.lock().await;
                         network.run(&input_data)
                     }
                     #[cfg(not(feature = "neural"))]
                     {
                         vec![0.95, 0.92, 0.88, 0.91] // Mock output
                     }
-                }).await
-                .map_err(|e| NeuralError::Inference(format!("Text enhancement failed: {}", e)))?;
+                };
                 
                 // Apply text corrections based on neural output
                 block.confidence = output.get(0).copied().unwrap_or(block.confidence);
@@ -504,18 +498,17 @@ impl NeuralEngine {
                 let network_arc = network_arc.clone();
                 let input_data = features.table_features;
                 
-                let output = tokio::task::spawn_blocking(move || {
+                let output = {
                     #[cfg(feature = "neural")]
                     {
-                        let mut network = network_arc.blocking_lock();
+                        let network = network_arc.lock().await;
                         network.run(&input_data)
                     }
                     #[cfg(not(feature = "neural"))]
                     {
                         vec![0.88, 0.85, 0.82, 0.87] // Mock output
                     }
-                }).await
-                .map_err(|e| NeuralError::Inference(format!("Table enhancement failed: {}", e)))?;
+                };
                 
                 // Apply table structure corrections
                 block.confidence = output.get(0).copied().unwrap_or(block.confidence);
@@ -539,18 +532,17 @@ impl NeuralEngine {
                 let network_arc = network_arc.clone();
                 let input_data = features.image_features;
                 
-                let output = tokio::task::spawn_blocking(move || {
+                let output = {
                     #[cfg(feature = "neural")]
                     {
-                        let mut network = network_arc.blocking_lock();
+                        let network = network_arc.lock().await;
                         network.run(&input_data)
                     }
                     #[cfg(not(feature = "neural"))]
                     {
                         vec![0.93, 0.87, 0.91, 0.89] // Mock output
                     }
-                }).await
-                .map_err(|e| NeuralError::Inference(format!("Image enhancement failed: {}", e)))?;
+                };
                 
                 // Apply image processing enhancements
                 block.confidence = output.get(0).copied().unwrap_or(block.confidence);
@@ -574,18 +566,17 @@ impl NeuralEngine {
                 let network_arc = network_arc.clone();
                 let input_data = features.layout_features;
                 
-                let output = tokio::task::spawn_blocking(move || {
+                let output = {
                     #[cfg(feature = "neural")]
                     {
-                        let mut network = network_arc.blocking_lock();
+                        let network = network_arc.lock().await;
                         network.run(&input_data)
                     }
                     #[cfg(not(feature = "neural"))]
                     {
                         vec![0.86, 0.84, 0.89, 0.87] // Mock output
                     }
-                }).await
-                .map_err(|e| NeuralError::Inference(format!("Layout enhancement failed: {}", e)))?;
+                };
                 
                 // Apply layout structure enhancements
                 block.confidence = output.get(0).copied().unwrap_or(block.confidence);
@@ -793,6 +784,7 @@ pub enum NetworkType {
     Standard,
     Sparse,
     Shortcut,
+    Cascade,
 }
 
 // Type definitions now imported from traits module

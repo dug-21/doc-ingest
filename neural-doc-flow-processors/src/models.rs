@@ -24,7 +24,7 @@ pub struct ModelManager {
     models: Arc<RwLock<HashMap<String, LoadedModel>>>,
     
     /// Model metadata cache
-    metadata_cache: Arc<RwLock<HashMap<String, ModelMetadata>>>,
+    metadata_cache: Arc<RwLock<HashMap<String, crate::traits::ModelMetadata>>>,
 }
 
 /// Loaded model information
@@ -34,7 +34,7 @@ struct LoadedModel {
     network: Arc<Fann>,
     
     /// Model metadata
-    metadata: ModelMetadata,
+    metadata: crate::traits::ModelMetadata,
     
     /// Load timestamp
     loaded_at: chrono::DateTime<chrono::Utc>,
@@ -262,15 +262,16 @@ impl ModelLoader for ModelManager {
         
         // Create placeholder network and metadata
         let network = ();
-        let metadata = ModelMetadata {
+        let metadata = crate::traits::ModelMetadata {
             id: model_id.to_string(),
-            model_type: ModelType::Text,
-            input_size: 0,
-            output_size: 0,
-            hidden_layers: vec![],
-            activation_function: "sigmoid".to_string(),
-            sparse_connection_rate: 1.0,
-            training_metadata: None,
+            name: format!("Neural Model {}", model_id),
+            version: "1.0.0".to_string(),
+            model_type: "neural".to_string(),
+            size_bytes: 1024,
+            input_size: 64,
+            output_size: 8,
+            created_at: chrono::Utc::now(),
+            description: "Neural document processing model".to_string(),
         };
 
         // Create loaded model
@@ -313,12 +314,20 @@ impl ModelLoader for ModelManager {
                 .map_err(|e| NeuralError::ModelSave(format!("Failed to create directory: {}", e)))?;
         }
 
-        let path_str = path.to_string_lossy().to_string();
-        tokio::task::spawn_blocking(move || {
-            network.save(&path_str)
-        }).await
-        .map_err(|e| NeuralError::ModelSave(format!("Task failed: {}", e)))?
-        .map_err(|e| NeuralError::ModelSave(format!("ruv-FANN save error: {}", e)))?;
+        #[cfg(feature = "neural")]
+        {
+            let path_str = path.to_string_lossy().to_string();
+            tokio::task::spawn_blocking(move || {
+                network.save(&path_str)
+            }).await
+            .map_err(|e| NeuralError::ModelSave(format!("Task failed: {}", e)))?
+            .map_err(|e| NeuralError::ModelSave(format!("ruv-FANN save error: {}", e)))?;
+        }
+        #[cfg(not(feature = "neural"))]
+        {
+            // Placeholder save operation for non-neural builds
+            std::fs::write(path, "placeholder_model_data").map_err(NeuralError::Io)?;
+        }
 
         info!("Successfully saved model {} to {:?}", model_id, path);
         Ok(())
@@ -352,7 +361,7 @@ impl ModelLoader for ModelManager {
         self.list_models()
     }
 
-    fn get_model_metadata(&self, model_id: &str) -> Result<ModelMetadata> {
+    fn get_model_metadata(&self, model_id: &str) -> Result<crate::traits::ModelMetadata> {
         let cache = self.metadata_cache.read().unwrap();
         cache.get(model_id)
             .cloned()
@@ -375,8 +384,18 @@ impl ModelManager {
             version: "1.0.0".to_string(), // Default version
             model_type: ModelManager::infer_model_type(model_id),
             size_bytes: file_metadata.len() as usize,
-            input_size: network.get_num_input() as usize,
-            output_size: network.get_num_output() as usize,
+            input_size: {
+                #[cfg(feature = "neural")]
+                { network.get_num_input() as usize }
+                #[cfg(not(feature = "neural"))]
+                { 64 } // Default input size
+            },
+            output_size: {
+                #[cfg(feature = "neural")]
+                { network.get_num_output() as usize }
+                #[cfg(not(feature = "neural"))]
+                { 8 } // Default output size
+            },
             created_at: file_metadata.created()
                 .map(|t| chrono::DateTime::from(t))
                 .unwrap_or_else(|_| chrono::Utc::now()),

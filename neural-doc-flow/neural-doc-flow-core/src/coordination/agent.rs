@@ -331,7 +331,7 @@ impl DocumentAgent for ValidationAgent {
         
         let result = match task {
             DocumentTask::ValidateContent { content } => {
-                info!("Validating extracted content");
+                info!("Validating extracted data.");
                 
                 // Perform validation logic
                 let validation_result = crate::traits::ValidationResult {

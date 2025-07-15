@@ -37,6 +37,10 @@ pub enum NeuralError {
     #[error("Inference failed: {0}")]
     Inference(String),
 
+    /// Processing failed error
+    #[error("Processing failed: {0}")]
+    ProcessingFailed(String),
+
     /// Invalid input data
     #[error("Invalid input: {0}")]
     InvalidInput(String),

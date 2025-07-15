@@ -7,17 +7,17 @@ pub mod config;
 pub mod error;
 pub mod types;
 pub mod traits;
-pub mod models;
-pub mod processing;
-pub mod utils;
+//pub mod models;
+//pub mod processing;
+//pub mod utils;
 pub mod neural;
-pub mod domain_config;
-pub mod daa_integration;
+//pub mod domain_config;
+//pub mod daa_integration;
 
 // Export key neural components
-pub use neural::{SimpleNeuralProcessor, FannNeuralProcessor, NeuralEngine};
-pub use domain_config::DomainConfigFactory;
-pub use daa_integration::DaaEnhancedNeuralProcessor;
+pub use neural::{SimpleNeuralProcessor, FannNeuralProcessor};
+//pub use domain_config::DomainConfigFactory;
+//pub use daa_integration::DaaEnhancedNeuralProcessor;
 
 use neural_doc_flow_core::traits::neural::{
     NeuralProcessor, NeuralConfig as CoreNeuralConfig, NeuralAnalysisResult, AnalysisType, 
@@ -26,25 +26,23 @@ use neural_doc_flow_core::traits::neural::{
     ModelMetadata
 };
 use neural_doc_flow_core::{Document, NeuralResult, NeuralError};
+use crate::traits::NeuralProcessorTrait;
 use async_trait::async_trait;
 use std::collections::HashMap;
 
 // Re-export for convenience
 pub use config::NeuralConfig;
 pub use types::{ContentBlock, EnhancedContent};
-pub use neural::{FannNeuralProcessor, NeuralEngine};
-pub use domain_config::DomainConfigFactory;
-pub use daa_integration::DaaEnhancedNeuralProcessor;
 
 // SIMD optimization modules
-#[cfg(feature = "simd")]
-pub mod simd_optimizer_enhanced;
+//#[cfg(feature = "simd")]
+//pub mod simd_optimizer_enhanced;
 
 // Memory optimization modules
-pub mod memory_optimized;
+//pub mod memory_optimized;
 
 // Async pipeline implementation
-pub mod async_pipeline;
+//pub mod async_pipeline;
 
 /// Basic neural processor implementation
 pub struct BasicNeuralProcessor {
@@ -71,7 +69,7 @@ impl NeuralProcessor for BasicNeuralProcessor {
         &self.version
     }
     
-    async fn process(&self, document: &Document, _config: &NeuralConfig) -> NeuralResult<NeuralAnalysisResult> {
+    async fn process(&self, document: &Document, _config: &CoreNeuralConfig) -> NeuralResult<NeuralAnalysisResult> {
         // Placeholder implementation
         let analysis_result = AnalysisResult {
             analysis_type: AnalysisType::Classification,
@@ -205,8 +203,8 @@ pub struct NeuralProcessingPipeline {
     /// FANN neural processor
     fann_processor: FannNeuralProcessor,
     
-    /// DAA-enhanced processor
-    daa_processor: Option<DaaEnhancedNeuralProcessor>,
+    /// DAA-enhanced processor (disabled for now)
+    //daa_processor: Option<DaaEnhancedNeuralProcessor>,
     
     /// Configuration
     config: NeuralConfig,
@@ -216,36 +214,40 @@ impl NeuralProcessingPipeline {
     /// Create new neural processing pipeline
     pub fn new(config: NeuralConfig) -> neural_doc_flow_core::NeuralResult<Self> {
         let fann_processor = FannNeuralProcessor::new(config.clone())
-            .map_err(|e| neural_doc_flow_core::NeuralError::ProcessingFailed { reason: e.to_string() })?;
+            .map_err(|e| neural_doc_flow_core::NeuralError::InferenceFailed { reason: e.to_string() })?;
         
         Ok(Self {
             fann_processor,
-            daa_processor: None,
+            //daa_processor: None,
             config,
         })
     }
     
-    /// Initialize with DAA integration
-    pub async fn with_daa_integration(mut self) -> neural_doc_flow_core::NeuralResult<Self> {
+    /// Initialize with DAA integration (disabled for now)
+    pub async fn with_daa_integration(self) -> neural_doc_flow_core::NeuralResult<Self> {
+        /*
         let daa_processor = DaaEnhancedNeuralProcessor::new(self.config.clone()).await
-            .map_err(|e| neural_doc_flow_core::NeuralError::ProcessingFailed { reason: e.to_string() })?;
+            .map_err(|e| neural_doc_flow_core::NeuralError::InferenceFailed { reason: e.to_string() })?;
         
         self.daa_processor = Some(daa_processor);
+        */
         Ok(self)
     }
     
     /// Process document with full neural pipeline
-    pub async fn process_document(&self, document: neural_doc_flow_core::Document) -> neural_doc_flow_core::NeuralResult<EnhancedContent> {
-        // Use DAA processor if available, otherwise use FANN processor
+    pub async fn process_document(&self, _document: neural_doc_flow_core::Document) -> neural_doc_flow_core::NeuralResult<EnhancedContent> {
+        // Use FANN processor for now (DAA integration disabled)
+        /*
         if let Some(daa_processor) = &self.daa_processor {
             daa_processor.process_document(document).await
-                .map_err(|e| neural_doc_flow_core::NeuralError::ProcessingFailed { reason: e.to_string() })
+                .map_err(|e| neural_doc_flow_core::NeuralError::InferenceFailed { reason: e.to_string() })
         } else {
+        */
             // Extract content blocks and process with FANN
             let content_blocks = vec![ContentBlock::new("document")];
             self.fann_processor.enhance_content(content_blocks).await
-                .map_err(|e| neural_doc_flow_core::NeuralError::ProcessingFailed { reason: e.to_string() })
-        }
+                .map_err(|e| neural_doc_flow_core::NeuralError::InferenceFailed { reason: e.to_string() })
+        //}
     }
 }
 

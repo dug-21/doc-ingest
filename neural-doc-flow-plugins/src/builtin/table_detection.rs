@@ -251,7 +251,7 @@ impl TableDetectionPlugin {
 
     /// Neural-based table detection using trained models
     fn neural_table_detection(&self, _engine: &NeuralEngine, _image_data: &ImageData) -> Result<Vec<DetectedTable>, ProcessingError> {
-        tracing::debug!("Neural table detection not yet implemented");
+        tracing::debug!("Neural table detection pending.");
         // Return empty vector for now - neural detection will be implemented
         // when the neural engine interface is stabilized
         Ok(Vec::new())

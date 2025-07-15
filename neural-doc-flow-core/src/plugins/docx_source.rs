@@ -5,7 +5,7 @@
 use crate::{
     traits::{DocumentSource, source::{DocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity}},
     document::{Document, DocumentBuilder},
-    error::ProcessingError,
+    error::{ProcessingError, SourceError},
     SourceResult,
 };
 use async_trait::async_trait;
@@ -56,7 +56,7 @@ impl DOCXSource {
     }
     
     /// Validate DOCX file structure
-    async fn validate_docx(&self, docx_data: &[u8]) -> Result<ValidationResult, ProcessingError> {
+    async fn validate_docx(&self, docx_data: &[u8]) -> Result<ValidationResult, SourceError> {
         let mut validation_result = ValidationResult::success();
         
         // Check ZIP header (DOCX is a ZIP file)
@@ -134,9 +134,9 @@ impl DocumentSource for DOCXSource {
         // Validate DOCX
         let validation_result = self.validate_docx(&docx_data).await?;
         if validation_result.has_critical_issues() {
-            return Err(ProcessingError::ValidationError(
-                format!("DOCX validation failed: {:?}", validation_result.issues)
-            ));
+            return Err(SourceError::ParseError {
+                reason: format!("DOCX validation failed: {:?}", validation_result.issues)
+            });
         }
         
         // Extract text content
@@ -150,9 +150,7 @@ impl DocumentSource for DOCXSource {
             .source("docx_source")
             .mime_type("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             .size(docx_data.len() as u64)
-            .with_text_content(text_content)
-            .with_raw_content(docx_data)
-            .with_custom_metadata(custom_metadata)
+            .text_content(text_content)
             .build();
         
         Ok(document)

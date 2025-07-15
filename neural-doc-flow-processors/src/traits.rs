@@ -391,6 +391,7 @@ impl Default for PerformanceMetrics {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -5,7 +5,7 @@
 use crate::{
     traits::{DocumentSource, source::{DocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity}},
     document::{Document, DocumentBuilder},
-    error::ProcessingError,
+    error::{ProcessingError, SourceError},
     SourceResult,
 };
 use async_trait::async_trait;
@@ -168,7 +168,7 @@ impl HTMLSource {
     }
     
     /// Validate HTML file structure
-    async fn validate_html(&self, html_data: &[u8]) -> Result<ValidationResult, ProcessingError> {
+    async fn validate_html(&self, html_data: &[u8]) -> Result<ValidationResult, SourceError> {
         let html_string = String::from_utf8_lossy(html_data);
         let mut validation_result = ValidationResult::success();
         
@@ -260,21 +260,21 @@ impl DocumentSource for HTMLSource {
         let html_data = if input.starts_with("http://") || input.starts_with("https://") {
             // For URLs, we'd use an HTTP client to fetch the content
             // For now, just return an error
-            return Err(ProcessingError::UnsupportedOperation(
-                "URL fetching not implemented in this example".to_string()
-            ));
+            return Err(SourceError::UnsupportedFormat {
+                format: "URL fetching not implemented".to_string()
+            });
         } else {
             // Read HTML file
             std::fs::read(input)
-                .map_err(|e| ProcessingError::IoError(e.to_string()))?
+                .map_err(|e| SourceError::DocumentNotFound { path: input.to_string() })?
         };
         
         // Validate HTML
         let validation_result = self.validate_html(&html_data).await?;
         if validation_result.has_critical_issues() {
-            return Err(ProcessingError::ValidationError(
-                format!("HTML validation failed: {:?}", validation_result.issues)
-            ));
+            return Err(SourceError::ParseError {
+                reason: format!("HTML validation failed: {:?}", validation_result.issues)
+            });
         }
         
         // Extract text content
@@ -288,9 +288,6 @@ impl DocumentSource for HTMLSource {
             .source("html_source")
             .mime_type("text/html")
             .size(html_data.len() as u64)
-            .with_text_content(text_content)
-            .with_raw_content(html_data)
-            .with_custom_metadata(custom_metadata)
             .build();
         
         Ok(document)
@@ -299,9 +296,9 @@ impl DocumentSource for HTMLSource {
     async fn get_metadata(&self, input: &str) -> SourceResult<DocumentMetadata> {
         if input.starts_with("http://") || input.starts_with("https://") {
             // For URLs, we'd need to fetch headers
-            return Err(ProcessingError::UnsupportedOperation(
-                "URL metadata fetching not implemented in this example".to_string()
-            ));
+            return Err(SourceError::UnsupportedFormat {
+                format: "URL metadata fetching not implemented".to_string()
+            });
         }
         
         let metadata = std::fs::metadata(input)
@@ -331,9 +328,9 @@ impl DocumentSource for HTMLSource {
     async fn validate(&self, input: &str) -> SourceResult<ValidationResult> {
         if input.starts_with("http://") || input.starts_with("https://") {
             // For URLs, we'd need to fetch and validate
-            return Err(ProcessingError::UnsupportedOperation(
-                "URL validation not implemented in this example".to_string()
-            ));
+            return Err(SourceError::UnsupportedFormat {
+                format: "URL validation not implemented".to_string()
+            });
         }
         
         // Check if file exists
