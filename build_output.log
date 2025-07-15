@@ -1,698 +1,159 @@
-   Compiling proc-macro2 v1.0.95
-   Compiling libc v0.2.174
-   Compiling quote v1.0.40
-   Compiling syn v2.0.104
-   Compiling cfg-if v1.0.1
-   Compiling zerocopy v0.8.26
-   Compiling autocfg v1.5.0
-   Compiling version_check v0.9.5
-   Compiling memchr v2.7.5
-   Compiling smallvec v1.15.1
-   Compiling jobserver v0.1.33
-   Compiling shlex v1.3.0
-   Compiling serde v1.0.219
-   Compiling cc v1.2.29
-   Compiling serde_derive v1.0.219
-   Compiling lock_api v0.4.13
-   Compiling itoa v1.0.15
-   Compiling parking_lot_core v0.9.11
-   Compiling log v0.4.27
-   Compiling once_cell v1.21.3
-   Compiling scopeguard v1.2.0
-   Compiling parking_lot v0.12.4
-   Compiling crossbeam-utils v0.8.21
-   Compiling pin-project-lite v0.2.16
-   Compiling pkg-config v0.3.32
-   Compiling libm v0.2.15
-   Compiling getrandom v0.2.16
-   Compiling rand_core v0.6.4
-   Compiling ppv-lite86 v0.2.21
-   Compiling num-traits v0.2.19
-   Compiling typenum v1.18.0
-   Compiling bytes v1.10.1
-   Compiling futures-sink v0.3.31
-   Compiling futures-core v0.3.31
-   Compiling rand_chacha v0.3.1
-   Compiling aho-corasick v1.1.3
-   Compiling generic-array v0.14.7
-   Compiling regex-syntax v0.8.5
-   Compiling regex-automata v0.4.9
-   Compiling rand v0.8.5
-   Compiling futures-channel v0.3.31
-   Compiling crossbeam-epoch v0.9.18
-   Compiling tokio-macros v2.5.0
-   Compiling futures-macro v0.3.31
-   Compiling mio v1.0.4
-   Compiling socket2 v0.5.10
-   Compiling signal-hook-registry v1.4.5
-   Compiling pin-utils v0.1.0
-   Compiling futures-task v0.3.31
-   Compiling futures-io v0.3.31
-   Compiling slab v0.4.10
-   Compiling futures-util v0.3.31
-   Compiling tokio v1.46.1
-   Compiling crossbeam-deque v0.8.6
-   Compiling tracing-core v0.1.34
-   Compiling getrandom v0.3.3
-   Compiling ryu v1.0.20
-   Compiling allocator-api2 v0.2.21
-   Compiling foldhash v0.1.5
-   Compiling siphasher v1.0.1
-   Compiling equivalent v1.0.2
-   Compiling hashbrown v0.15.4
-   Compiling phf_shared v0.11.3
-   Compiling tracing-attributes v0.1.30
-   Compiling synstructure v0.13.2
-   Compiling serde_json v1.0.140
-   Compiling stable_deref_trait v1.2.0
-   Compiling thiserror v1.0.69
-   Compiling tracing v0.1.41
-   Compiling crypto-common v0.1.6
-   Compiling thiserror-impl v1.0.69
-   Compiling adler2 v2.0.1
-   Compiling bitflags v2.9.1
-   Compiling iana-time-zone v0.1.63
-   Compiling rayon-core v1.12.1
-   Compiling chrono v0.4.41
-   Compiling miniz_oxide v0.8.9
-   Compiling zerofrom-derive v0.1.6
-   Compiling phf_generator v0.11.3
-   Compiling crc32fast v1.4.2
-   Compiling subtle v2.6.1
-   Compiling tinyvec_macros v0.1.1
-   Compiling tinyvec v1.9.0
-   Compiling flate2 v1.1.2
-   Compiling zerofrom v0.1.6
-   Compiling yoke-derive v0.8.0
-   Compiling block-buffer v0.10.4
-   Compiling futures-executor v0.3.31
-   Compiling crossbeam-channel v0.5.15
-   Compiling either v1.15.0
-   Compiling anyhow v1.0.98
-   Compiling rayon v1.10.0
-   Compiling futures v0.3.31
-   Compiling digest v0.10.7
-   Compiling yoke v0.8.0
-   Compiling unicode-normalization v0.1.24
-   Compiling regex v1.11.1
-   Compiling crossbeam-queue v0.3.12
-   Compiling crossbeam v0.8.4
-   Compiling uuid v1.17.0
-   Compiling indexmap v2.10.0
-   Compiling async-trait v0.1.88
-   Compiling zerovec-derive v0.11.1
    Compiling neural-doc-flow-core v0.1.0 (/workspaces/doc-ingest/neural-doc-flow-core)
-   Compiling zerovec v0.11.2
-warning: unused import: `crate::memory::*`
- --> neural-doc-flow-core/src/memory_profiler.rs:6:5
-  |
-6 | use crate::memory::*;
-  |     ^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: unused import: `NeuralDocFlowError`
- --> neural-doc-flow-core/src/memory_profiler.rs:8:28
-  |
-8 | use crate::error::{Result, NeuralDocFlowError};
-  |                            ^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Weak`
- --> neural-doc-flow-core/src/memory_profiler.rs:9:22
-  |
-9 | use std::sync::{Arc, Weak};
-  |                      ^^^^
-
-   Compiling displaydoc v0.2.5
-error[E0382]: borrow of moved value: `usage_by_type`
-   --> neural-doc-flow-core/src/memory_profiler.rs:378:75
+error: prefix `Architecture` is unknown
+   --> neural-doc-flow-core/src/engine.rs:576:75
     |
-364 |         let usage_by_type = self.usage_by_type().await;
-    |             ------------- move occurs because `usage_by_type` has type `HashMap<AllocationType, usize>`, which does not implement the `Copy` trait
-...
-373 |             usage_by_type,
-    |             ------------- value moved here
-...
-378 |             recommendations: self.generate_recommendations(current_usage, &usage_by_type).await,
-    |                                                                           ^^^^^^^^^^^^^^ value borrowed here after move
+576 |         info!("Initializing Phase 4 Document Engine with Complete 4-Layer Architecture");
+    |                                                                           ^^^^^^^^^^^^ unknown prefix
     |
-help: consider cloning the value if the performance cost is acceptable
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
     |
-373 |             usage_by_type: usage_by_type.clone(),
-    |                          +++++++++++++++++++++++
+576 |         info!("Initializing Phase 4 Document Engine with Complete 4-Layer Architecture ");
+    |                                                                                       +
 
-error[E0599]: no method named `elapsed` found for struct `DateTime` in the current scope
-   --> neural-doc-flow-core/src/memory_profiler.rs:429:47
+error: prefix `schemas` is unknown
+   --> neural-doc-flow-core/src/engine.rs:611:69
     |
-429 |             history.back().unwrap().timestamp.elapsed() > self.config.snapshot_interval;
-    |                                               ^^^^^^^ method not found in `DateTime<Utc>`
-
-   Compiling target-lexicon v0.12.16
-   Compiling vcpkg v0.2.15
-error[E0599]: no method named `clone` found for struct `parking_lot::lock_api::RwLockReadGuard<'_, parking_lot::RawRwLock, PoolStats>` in the current scope
-   --> neural-doc-flow-core/src/memory.rs:117:27
+611 |         info!("Initializing DocumentEngine with default plugins and schemas");
+    |                                                                     ^^^^^^^ unknown prefix
     |
-117 |         self.stats.read().clone()
-    |                           ^^^^^ method not found in `RwLockReadGuard<'_, RawRwLock, PoolStats>`
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
     |
-    = help: items from traits can only be used if the trait is implemented and in scope
-    = note: the following trait defines an item `clone`, perhaps you need to implement it:
-            candidate #1: `Clone`
+611 |         info!("Initializing DocumentEngine with default plugins and schemas ");
+    |                                                                            +
 
-error[E0277]: the trait bound `PoolStats: Clone` is not satisfied
-   --> neural-doc-flow-core/src/memory.rs:542:5
+error: prefix `engine` is unknown
+   --> neural-doc-flow-core/src/engine.rs:808:47
     |
-538 | #[derive(Debug, Clone)]
-    |                 ----- in this derive macro expansion
-...
-542 |     pub pool_stats: PoolStats,
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `PoolStats`
+808 |         info!("Security processor attached to engine");
+    |                                               ^^^^^^ unknown prefix
     |
-help: consider annotating `PoolStats` with `#[derive(Clone)]`
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
     |
-28  + #[derive(Clone)]
-29  | pub struct PoolStats {
+808 |         info!("Security processor attached to engine ");
+    |                                                     +
+
+error: prefix `disabled` is unknown
+   --> neural-doc-flow-core/src/engine.rs:922:46
     |
-
-error[E0277]: `memory::MemoryMonitor` doesn't implement `Debug`
-  --> neural-doc-flow-core/src/optimized_types.rs:32:5
-   |
-19 | #[derive(Debug, Clone)]
-   |          ----- in this derive macro expansion
-...
-32 |     monitor: Arc<MemoryMonitor>,
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `memory::MemoryMonitor` cannot be formatted using `{:?}`
-   |
-   = help: the trait `Debug` is not implemented for `memory::MemoryMonitor`
-   = note: add `#[derive(Debug)]` to `memory::MemoryMonitor` or manually `impl Debug for memory::MemoryMonitor`
-   = help: the trait `Debug` is implemented for `Arc<T, A>`
-help: consider annotating `memory::MemoryMonitor` with `#[derive(Debug)]`
-  --> neural-doc-flow-core/src/memory.rs:550:1
-   |
-550+ #[derive(Debug)]
-551| pub struct MemoryMonitor {
-   |
-
-error[E0277]: the trait bound `Arc<str>: Serialize` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:61:24
-     |
-61   | #[derive(Debug, Clone, Serialize, Deserialize)]
-     |                        ^^^^^^^^^ the trait `Serialize` is not implemented for `Arc<str>`
-62   | pub struct CompactMetadata {
-63   |     /// Interned strings for common values
-     |     -------------------------------------- required by a bound introduced by this call
-     |
-     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Serialize`:
-               &'a T
-               &'a mut T
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-               (T0, T1, T2, T3, T4)
-             and 291 others
-     = note: required for `std::option::Option<Arc<str>>` to implement `Serialize`
-note: required by a bound in `types::_::_serde::ser::SerializeStruct::serialize_field`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/ser/mod.rs:1866:21
-     |
-1864 |     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
-     |        --------------- required by a bound in this associated function
-1865 |     where
-1866 |         T: ?Sized + Serialize;
-     |                     ^^^^^^^^^ required by this bound in `SerializeStruct::serialize_field`
-     = note: this error originates in the derive macro `Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:64:16
-     |
-64   |     pub title: Option<Arc<str>>,
-     |                ^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `std::option::Option<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `next_element`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1732:12
-     |
-1730 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
-     |        ------------ required by a bound in this associated function
-1731 |     where
-1732 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:65:17
-     |
-65   |     pub source: Arc<str>,
-     |                 ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-note: required by a bound in `next_element`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1732:12
-     |
-1730 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
-     |        ------------ required by a bound in this associated function
-1731 |     where
-1732 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:66:20
-     |
-66   |     pub mime_type: Arc<str>,
-     |                    ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-note: required by a bound in `next_element`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1732:12
-     |
-1730 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
-     |        ------------ required by a bound in this associated function
-1731 |     where
-1732 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:67:19
-     |
-67   |     pub language: Option<Arc<str>>,
-     |                   ^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `std::option::Option<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `next_element`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1732:12
-     |
-1730 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
-     |        ------------ required by a bound in this associated function
-1731 |     where
-1732 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:70:18
-     |
-70   |     pub authors: Vec<Arc<str>>,
-     |                  ^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `Vec<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `next_element`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1732:12
-     |
-1730 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
-     |        ------------ required by a bound in this associated function
-1731 |     where
-1732 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:73:17
-     |
-73   |     pub custom: HashMap<Arc<str>, CompactValue>,
-     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `HashMap<Arc<str>, CompactValue>` to implement `Deserialize<'_>`
-note: required by a bound in `next_element`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1732:12
-     |
-1730 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
-     |        ------------ required by a bound in this associated function
-1731 |     where
-1732 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:64:16
-     |
-64   |     pub title: Option<Arc<str>>,
-     |                ^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `std::option::Option<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `next_value`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1871:12
-     |
-1869 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
-     |        ---------- required by a bound in this associated function
-1870 |     where
-1871 |         V: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:65:17
-     |
-65   |     pub source: Arc<str>,
-     |                 ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-note: required by a bound in `next_value`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1871:12
-     |
-1869 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
-     |        ---------- required by a bound in this associated function
-1870 |     where
-1871 |         V: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:66:20
-     |
-66   |     pub mime_type: Arc<str>,
-     |                    ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-note: required by a bound in `next_value`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1871:12
-     |
-1869 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
-     |        ---------- required by a bound in this associated function
-1870 |     where
-1871 |         V: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:67:19
-     |
-67   |     pub language: Option<Arc<str>>,
-     |                   ^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `std::option::Option<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `next_value`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1871:12
-     |
-1869 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
-     |        ---------- required by a bound in this associated function
-1870 |     where
-1871 |         V: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:70:18
-     |
-70   |     pub authors: Vec<Arc<str>>,
-     |                  ^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `Vec<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `next_value`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1871:12
-     |
-1869 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
-     |        ---------- required by a bound in this associated function
-1870 |     where
-1871 |         V: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:73:17
-     |
-73   |     pub custom: HashMap<Arc<str>, CompactValue>,
-     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-     |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-     = note: required for `HashMap<Arc<str>, CompactValue>` to implement `Deserialize<'_>`
-note: required by a bound in `next_value`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:1871:12
-     |
-1869 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
-     |        ---------- required by a bound in this associated function
-1870 |     where
-1871 |         V: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
-
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-  --> neural-doc-flow-core/src/optimized_types.rs:61:35
-   |
-61 | #[derive(Debug, Clone, Serialize, Deserialize)]
-   |                                   ^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
-   |
-   = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-   = note: for types from other crates check whether the crate offers a `serde` feature flag
-   = help: the following other types implement trait `Deserialize<'de>`:
-             &'a Path
-             &'a [u8]
-             &'a str
-             ()
-             (T,)
-             (T0, T1)
-             (T0, T1, T2)
-             (T0, T1, T2, T3)
-           and 302 others
-   = note: required for `std::option::Option<Arc<str>>` to implement `Deserialize<'_>`
-note: required by a bound in `types::_::_serde::__private::de::missing_field`
-  --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/private/de.rs:25:8
-   |
-23 | pub fn missing_field<'de, V, E>(field: &'static str) -> Result<V, E>
-   |        ------------- required by a bound in this function
-24 | where
-25 |     V: Deserialize<'de>,
-   |        ^^^^^^^^^^^^^^^^ required by this bound in `missing_field`
-   = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `Arc<str>: Serialize` is not satisfied
-   --> neural-doc-flow-core/src/optimized_types.rs:80:24
+922 |                     info!("Security scanning disabled");
+    |                                              ^^^^^^^^ unknown prefix
     |
-80  | #[derive(Debug, Clone, Serialize, Deserialize)]
-    |                        ^^^^^^^^^ the trait `Serialize` is not implemented for `Arc<str>`
-81  | pub enum CompactValue {
-82  |     String(Arc<str>),
-    |            --- required by a bound introduced by this call
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
     |
-    = note: for local types consider adding `#[derive(serde::Serialize)]` to your `Arc<str>` type
-    = note: for types from other crates check whether the crate offers a `serde` feature flag
-    = help: the following other types implement trait `Serialize`:
-              &'a T
-              &'a mut T
-              ()
-              (T,)
-              (T0, T1)
-              (T0, T1, T2)
-              (T0, T1, T2, T3)
-              (T0, T1, T2, T3, T4)
-            and 291 others
-note: required by a bound in `serialize_newtype_variant`
-   --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/ser/mod.rs:943:21
-    |
-935 |     fn serialize_newtype_variant<T>(
-    |        ------------------------- required by a bound in this associated function
-...
-943 |         T: ?Sized + Serialize;
-    |                     ^^^^^^^^^ required by this bound in `Serializer::serialize_newtype_variant`
-    = note: this error originates in the derive macro `Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+922 |                     info!("Security scanning disabled ");
+    |                                                      +
 
-error[E0277]: the trait bound `Arc<str>: Deserialize<'_>` is not satisfied
-    --> neural-doc-flow-core/src/optimized_types.rs:82:12
+error: prefix `error` is unknown
+   --> neural-doc-flow-core/src/engine.rs:940:76
+    |
+940 | ...                   warn!("Proceeding without security scan due to error");
+    |                                                                      ^^^^^ unknown prefix
+    |
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+    |
+940 |                             warn!("Proceeding without security scan due to error ");
+    |                                                                                 +
+
+error: prefix `implemented` is unknown
+   --> neural-doc-flow-core/src/engine.rs:946:62
+    |
+946 |                     warn!("Custom security scan mode not yet implemented");
+    |                                                              ^^^^^^^^^^^ unknown prefix
+    |
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+    |
+946 |                     warn!("Custom security scan mode not yet implemented ");
+    |                                                                         +
+
+error: prefix `only` is unknown
+   --> neural-doc-flow-core/src/engine.rs:951:94
+    |
+951 |             info!("Security enabled but no processor available - performing basic validation only");
+    |                                                                                              ^^^^ unknown prefix
+    |
+    = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+    |
+951 |             info!("Security enabled but no processor available - performing basic validation only ");
+    |                                                                                                  +
+
+error: prefix `processing` is unknown
+    --> neural-doc-flow-core/src/engine.rs:1062:71
      |
-82   |     String(Arc<str>),
-     |            ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `Arc<str>`
+1062 |                     info!("Security analysis: ALLOW - proceeding with processing");
+     |                                                                       ^^^^^^^^^^ unknown prefix
      |
-     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `Arc<str>` type
-     = note: for types from other crates check whether the crate offers a `serde` feature flag
-     = help: the following other types implement trait `Deserialize<'de>`:
-               &'a Path
-               &'a [u8]
-               &'a str
-               ()
-               (T,)
-               (T0, T1)
-               (T0, T1, T2)
-               (T0, T1, T2, T3)
-             and 302 others
-note: required by a bound in `newtype_variant`
-    --> /home/codespace/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.219/src/de/mod.rs:2125:12
+     = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
      |
-2123 |     fn newtype_variant<T>(self) -> Result<T, Self::Error>
-     |        --------------- required by a bound in this associated function
-2124 |     where
-2125 |         T: Deserialize<'de>,
-     |            ^^^^^^^^^^^^^^^^ required by this bound in `VariantAccess::newtype_variant`
+1062 |                     info!("Security analysis: ALLOW - proceeding with processing ");
+     |                                                                                 +
 
-error[E0277]: `dyn Fn() -> Result<Arc<str>, NeuralDocFlowError> + Send + Sync` doesn't implement `Debug`
-  --> neural-doc-flow-core/src/optimized_types.rs:95:5
-   |
-89 | #[derive(Debug)]
-   |          ----- in this derive macro expansion
-...
-95 |     loader: Option<Box<dyn Fn() -> Result<Arc<str>> + Send + Sync>>,
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `dyn Fn() -> Result<Arc<str>, NeuralDocFlowError> + Send + Sync` cannot be formatted using `{:?}` because it doesn't implement `Debug`
-   |
-   = help: the trait `Debug` is not implemented for `dyn Fn() -> Result<Arc<str>, NeuralDocFlowError> + Send + Sync`
-   = note: the full name for the type has been written to '/workspaces/doc-ingest/target/debug/deps/neural_doc_flow_core-ea07445e9d83f5d9.long-type-312884616046808477.txt'
-   = note: consider using `--verbose` to print the full type name to the console
+error: prefix `content` is unknown
+    --> neural-doc-flow-core/src/engine.rs:1065:76
+     |
+1065 |                     info!("Security analysis: SANITIZE - cleaning document content");
+     |                                                                            ^^^^^^^ unknown prefix
+     |
+     = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+     |
+1065 |                     info!("Security analysis: SANITIZE - cleaning document content ");
+     |                                                                                   +
 
-error[E0277]: `dyn Fn() -> Box<dyn Stream<Item = ...> + Send + Unpin> + Send + Sync` doesn't implement `Debug`
-   --> neural-doc-flow-core/src/optimized_types.rs:111:5
-    |
-105 | #[derive(Debug)]
-    |          ----- in this derive macro expansion
-...
-111 |     stream_factory: Box<dyn Fn() -> Box<dyn futures::Stream<Item = Result<Bytes>> + Unpin + Send> + Send + Sync>,
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `dyn Fn() -> Box<dyn Stream<Item = ...> + Send + Unpin> + Send + Sync` cannot be formatted using `{:?}` because it doesn't implement `Debug`
-    |
-    = help: the trait `Debug` is not implemented for `dyn Fn() -> Box<dyn Stream<Item = ...> + Send + Unpin> + Send + Sync`
-    = help: the following other types implement trait `Debug`:
-              dyn std::any::Any + std::marker::Send + Sync
-              dyn std::any::Any + std::marker::Send
-              dyn std::any::Any
-              dyn tracing::Value
-    = note: the full name for the type has been written to '/workspaces/doc-ingest/target/debug/deps/neural_doc_flow_core-ea07445e9d83f5d9.long-type-13644447389695798516.txt'
-    = note: consider using `--verbose` to print the full type name to the console
+error: prefix `review` is unknown
+    --> neural-doc-flow-core/src/engine.rs:1069:81
+     |
+1069 |                     warn!("Security analysis: QUARANTINE - document flagged for review");
+     |                                                                                 ^^^^^^ unknown prefix
+     |
+     = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+     |
+1069 |                     warn!("Security analysis: QUARANTINE - document flagged for review ");
+     |                                                                                       +
 
-error[E0277]: `dyn Fn() -> Result<Bytes, NeuralDocFlowError> + Send + Sync` doesn't implement `Debug`
-   --> neural-doc-flow-core/src/optimized_types.rs:146:9
-    |
-135 | #[derive(Debug, Clone)]
-    |          ----- in this derive macro expansion
-...
-146 |         loader: Arc<dyn Fn() -> Result<Bytes> + Send + Sync>,
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `dyn Fn() -> Result<Bytes, NeuralDocFlowError> + Send + Sync` cannot be formatted using `{:?}` because it doesn't implement `Debug`
-    |
-    = help: the trait `Debug` is not implemented for `dyn Fn() -> Result<Bytes, NeuralDocFlowError> + Send + Sync`
-    = note: the full name for the type has been written to '/workspaces/doc-ingest/target/debug/deps/neural_doc_flow_core-ea07445e9d83f5d9.long-type-1149595609471019556.txt'
-    = note: consider using `--verbose` to print the full type name to the console
+error: prefix `level` is unknown
+    --> neural-doc-flow-core/src/engine.rs:1077:56
+     |
+1077 |                         serde_json::json!("High threat level")
+     |                                                        ^^^^^ unknown prefix
+     |
+     = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+     |
+1077 |                         serde_json::json!("High threat level ")
+     |                                                             +
 
-   Compiling openssl-sys v0.9.109
-   Compiling rand_distr v0.4.3
-   Compiling bincode v1.3.3
-Some errors have detailed explanations: E0277, E0382, E0599.
-For more information about an error, try `rustc --explain E0277`.
-warning: `neural-doc-flow-core` (lib) generated 3 warnings
-error: could not compile `neural-doc-flow-core` (lib) due to 24 previous errors; 3 warnings emitted
-warning: build failed, waiting for other jobs to finish...
+error: prefix `taken` is unknown
+    --> neural-doc-flow-core/src/engine.rs:1081:61
+     |
+1081 |                     error!("Security analysis: BLOCK action taken");
+     |                                                             ^^^^^ unknown prefix
+     |
+     = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+     |
+1081 |                     error!("Security analysis: BLOCK action taken ");
+     |                                                                  +
+
+error[E0765]: unterminated double quote string
+    --> neural-doc-flow-core/src/engine.rs:1081:66
+     |
+1081 |                       error!("Security analysis: BLOCK action taken");
+     |  __________________________________________________________________^
+1082 | |                     // Work around Rust 1.88.0 parser bug with string literals
+1083 | |                     let msg = ['S', 'e', 'c', 'u', 'r', 'i', 't', 'y', ' ', 'b', 'l', 'o', 'c', 'k', 'e', 'd']
+1084 | |                         .iter()
+...    |
+1184 | | }
+     | |_^
+
+For more information about this error, try `rustc --explain E0765`.
+error: could not compile `neural-doc-flow-core` (lib) due to 13 previous errors
