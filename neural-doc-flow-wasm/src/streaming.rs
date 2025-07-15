@@ -2,27 +2,81 @@
 //! 
 //! Architecture Compliance: Zero JavaScript dependencies
 
+#[cfg(feature = "streaming")]
 use std::collections::HashMap;
+
+#[cfg(feature = "basic")]
 use std::ffi::{CStr, CString};
+
+#[cfg(feature = "basic")]
 use std::os::raw::c_char;
+
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "processing")]
 use neural_doc_flow_core::{ProcessingConfig, Document};
+
+#[cfg(feature = "neural")]
 use neural_doc_flow_processors::ProcessingResult;
-use crate::{WasmProcessingResult, SecurityScanResult};
+
+use crate::WasmProcessingResult;
+
+#[cfg(feature = "security")]
+use crate::SecurityScanResult;
+
 use crate::utils::PerformanceTimer;
 
 /// Pure Rust streaming document processor for handling large files efficiently
+#[cfg(feature = "streaming")]
 pub struct StreamingDocumentProcessor {
+    #[cfg(feature = "processing")]
     config: ProcessingConfig,
+    #[cfg(not(feature = "processing"))]
+    config: (),
     chunk_size: usize,
     max_memory_usage: usize,
 }
 
+#[cfg(not(feature = "streaming"))]
+pub struct StreamingDocumentProcessor {
+    placeholder: u8,
+}
+
+#[cfg(not(feature = "streaming"))]
 impl StreamingDocumentProcessor {
+    pub fn new(_config: ()) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            placeholder: 0,
+        })
+    }
+    
+    pub async fn process_bytes(&mut self, _data: &[u8]) -> Result<WasmProcessingResult, Box<dyn std::error::Error>> {
+        Ok(WasmProcessingResult {
+            success: false,
+            processing_time_ms: 0,
+            content_length: 0,
+            content_ptr: std::ptr::null_mut(),
+            metadata_count: 0,
+            warnings_count: 0,
+        })
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl StreamingDocumentProcessor {
+    #[cfg(feature = "processing")]
     pub fn new(config: ProcessingConfig) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
             config,
+            chunk_size: 64 * 1024, // 64KB chunks
+            max_memory_usage: 100 * 1024 * 1024, // 100MB max memory
+        })
+    }
+    
+    #[cfg(not(feature = "processing"))]
+    pub fn new(_config: ()) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            config: (),
             chunk_size: 64 * 1024, // 64KB chunks
             max_memory_usage: 100 * 1024 * 1024, // 100MB max memory
         })

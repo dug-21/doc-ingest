@@ -7,16 +7,33 @@
 //! Architecture Compliance: Zero JavaScript dependencies - Pure Rust WASM
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "streaming")]
 use std::collections::HashMap;
+
+#[cfg(feature = "basic")]
 use std::sync::Arc;
+
+#[cfg(feature = "basic")]
 use std::ffi::{CStr, CString};
+
+#[cfg(feature = "basic")]
 use std::os::raw::c_char;
 
-// Import our core processing modules
+// Conditional imports for faster compilation
+#[cfg(feature = "processing")]
 use neural_doc_flow_core::{DocumentProcessor, ProcessingConfig, Document};
+
+#[cfg(feature = "neural")]
 use neural_doc_flow_processors::neural_engine::NeuralEngine;
+
+#[cfg(feature = "processing")]
 use neural_doc_flow_sources::manager::SourceManager;
+
+#[cfg(feature = "outputs")]
 use neural_doc_flow_outputs::OutputFormat;
+
+#[cfg(feature = "security")]
 use neural_doc_flow_security::SecurityEngine;
 
 mod utils;
@@ -47,10 +64,18 @@ pub extern "C" fn init_neural_doc_flow() -> i32 {
 }
 
 /// Main processor interface for pure Rust WASM
+#[cfg(feature = "processing")]
 #[repr(C)]
 pub struct WasmDocumentProcessor {
     inner: Arc<DocumentProcessor>,
     config: ProcessingConfig,
+}
+
+/// Minimal processor stub for fast builds
+#[cfg(not(feature = "processing"))]
+#[repr(C)]
+pub struct WasmDocumentProcessor {
+    placeholder: u8,
 }
 
 /// Configuration options for document processing
@@ -63,10 +88,16 @@ pub struct WasmProcessingConfig {
     pub max_file_size: u32,
     /// Processing timeout in milliseconds
     pub timeout_ms: u32,
+    #[cfg(feature = "security")]
     /// Security scanning level (0-3)
     pub security_level: u8,
+    #[cfg(not(feature = "security"))]
+    /// Security scanning level (0-3) - disabled
+    pub security_level: u8,
+    #[cfg(feature = "outputs")]
     /// Output formats count
     pub output_formats_count: usize,
+    #[cfg(feature = "outputs")]
     /// Output formats as C-style strings
     pub output_formats: [*const c_char; 16], // Max 16 formats
 }
@@ -81,18 +112,47 @@ pub struct WasmProcessingResult {
     pub processing_time_ms: u32,
     /// Content length
     pub content_length: usize,
-    /// Content pointer (caller must free)
-    pub content_ptr: *mut c_char,
+    /// Content pointer (caller must free) - simplified for all builds
+    pub content_ptr: *mut u8,
     /// Metadata count
     pub metadata_count: usize,
-    /// Metadata keys pointer
-    pub metadata_keys: *mut *mut c_char,
-    /// Metadata values pointer
-    pub metadata_values: *mut *mut c_char,
     /// Warnings count
     pub warnings_count: usize,
-    /// Warnings pointer
-    pub warnings: *mut *mut c_char,
+}
+
+impl WasmProcessingResult {
+    #[cfg(feature = "processing")]
+    pub fn from_core_result(result: neural_doc_flow_core::ProcessingResult) -> Self {
+        let content = result.content().unwrap_or_default();
+        let content_bytes = content.as_bytes().to_vec();
+        let content_ptr = if content_bytes.is_empty() {
+            std::ptr::null_mut()
+        } else {
+            let boxed_slice = content_bytes.into_boxed_slice();
+            Box::into_raw(boxed_slice) as *mut u8
+        };
+        
+        WasmProcessingResult {
+            success: result.is_success(),
+            processing_time_ms: result.processing_time_ms().unwrap_or(0),
+            content_length: content.len(),
+            content_ptr,
+            metadata_count: 0,
+            warnings_count: 0,
+        }
+    }
+    
+    #[cfg(not(feature = "processing"))]
+    pub fn from_core_result(_result: ()) -> Self {
+        WasmProcessingResult {
+            success: false,
+            processing_time_ms: 0,
+            content_length: 0,
+            content_ptr: std::ptr::null_mut(),
+            metadata_count: 0,
+            warnings_count: 0,
+        }
+    }
 }
 
 /// Security scan result structure
@@ -107,6 +167,7 @@ pub struct SecurityScanResult {
 }
 
 // C-style API for pure Rust WASM
+#[cfg(feature = "processing")]
 #[no_mangle]
 pub extern "C" fn create_processor() -> *mut WasmDocumentProcessor {
     let config = ProcessingConfig::default();
@@ -121,6 +182,15 @@ pub extern "C" fn create_processor() -> *mut WasmDocumentProcessor {
         }
         Err(_) => std::ptr::null_mut(),
     }
+}
+
+#[cfg(not(feature = "processing"))]
+#[no_mangle]
+pub extern "C" fn create_processor() -> *mut WasmDocumentProcessor {
+    let wasm_processor = Box::new(WasmDocumentProcessor {
+        placeholder: 0,
+    });
+    Box::into_raw(wasm_processor)
 }
 
 #[no_mangle]
@@ -218,11 +288,19 @@ pub extern "C" fn get_version() -> *const c_char {
     VERSION.as_ptr() as *const c_char
 }
 
+#[cfg(feature = "neural")]
 #[no_mangle]
 pub extern "C" fn neural_available() -> bool {
     neural_doc_flow_processors::neural_engine::is_available()
 }
 
+#[cfg(not(feature = "neural"))]
+#[no_mangle]
+pub extern "C" fn neural_available() -> bool {
+    false
+}
+
+#[cfg(feature = "processing")]
 #[no_mangle]
 pub extern "C" fn validate_file_format(
     data: *const u8,
@@ -247,6 +325,17 @@ pub extern "C" fn validate_file_format(
             Err(_) => false,
         }
     }
+}
+
+#[cfg(not(feature = "processing"))]
+#[no_mangle]
+pub extern "C" fn validate_file_format(
+    _data: *const u8,
+    _data_len: usize,
+    _filename: *const c_char,
+    _max_size: u32,
+) -> bool {
+    false  // No validation without processing features
 }
 
 #[no_mangle]
@@ -329,21 +418,40 @@ impl WasmUtils {
     }
 
     /// Check if neural processing is available
+    #[cfg(feature = "neural")]
     pub fn neural_available() -> bool {
         neural_doc_flow_processors::neural_engine::is_available()
     }
 
+    #[cfg(not(feature = "neural"))]
+    pub fn neural_available() -> bool {
+        false
+    }
+
     /// Get supported input formats
+    #[cfg(feature = "processing")]
     pub fn supported_formats() -> Vec<String> {
         neural_doc_flow_sources::get_supported_formats()
     }
 
+    #[cfg(not(feature = "processing"))]
+    pub fn supported_formats() -> Vec<String> {
+        vec!["txt".to_string()]
+    }
+
     /// Get supported output formats
+    #[cfg(feature = "outputs")]
     pub fn output_formats() -> Vec<String> {
         neural_doc_flow_outputs::get_supported_formats()
     }
 
+    #[cfg(not(feature = "outputs"))]
+    pub fn output_formats() -> Vec<String> {
+        vec!["text".to_string()]
+    }
+
     /// Validate a file before processing
+    #[cfg(feature = "processing")]
     pub fn validate_file(data: &[u8], filename: String, max_size: u32) -> Result<bool, Box<dyn std::error::Error>> {
         if data.len() > max_size as usize {
             return Ok(false);
@@ -351,6 +459,11 @@ impl WasmUtils {
 
         let is_valid = neural_doc_flow_sources::validate_file_format(data, &filename)?;
         Ok(is_valid)
+    }
+
+    #[cfg(not(feature = "processing"))]
+    pub fn validate_file(data: &[u8], _filename: String, max_size: u32) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(data.len() <= max_size as usize)
     }
 
     /// Estimate processing time for a document
@@ -363,13 +476,16 @@ impl WasmUtils {
 }
 
 /// Export the default processing configuration
+#[cfg(feature = "processing")]
 pub fn default_config() -> WasmProcessingConfig {
     WasmProcessingConfig {
-        neural_enhancement: true,
+        neural_enhancement: cfg!(feature = "neural"),
         max_file_size: 50 * 1024 * 1024, // 50MB
         timeout_ms: 30000,               // 30 seconds
-        security_level: 2,               // Moderate security
+        security_level: if cfg!(feature = "security") { 2 } else { 0 },
+        #[cfg(feature = "outputs")]
         output_formats_count: 2,
+        #[cfg(feature = "outputs")]
         output_formats: [
             "text\0".as_ptr() as *const c_char,
             "json\0".as_ptr() as *const c_char,
@@ -391,6 +507,37 @@ pub fn default_config() -> WasmProcessingConfig {
     }
 }
 
+#[cfg(not(feature = "processing"))]
+pub fn default_config() -> WasmProcessingConfig {
+    WasmProcessingConfig {
+        neural_enhancement: false,
+        max_file_size: 10 * 1024 * 1024, // 10MB for minimal
+        timeout_ms: 10000,               // 10 seconds
+        security_level: 0,               // No security
+    }
+}
+
+// Implementation for WasmProcessingConfig
+impl WasmProcessingConfig {
+    #[cfg(feature = "processing")]
+    pub fn to_core_config(&self) -> Result<ProcessingConfig, Box<dyn std::error::Error>> {
+        let mut config = ProcessingConfig::default();
+        config.neural_enhancement = self.neural_enhancement;
+        config.max_file_size = self.max_file_size;
+        config.timeout_ms = self.timeout_ms;
+        #[cfg(feature = "security")]
+        {
+            config.security_level = self.security_level;
+        }
+        Ok(config)
+    }
+    
+    #[cfg(not(feature = "processing"))]
+    pub fn to_core_config(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Err("Processing features not enabled".into())
+    }
+}
+
 // Export C-style header information
 #[no_mangle]
 pub extern "C" fn get_api_version() -> u32 {
@@ -401,12 +548,27 @@ pub extern "C" fn get_api_version() -> u32 {
 pub extern "C" fn get_feature_flags() -> u32 {
     let mut flags = 0u32;
     
-    if neural_doc_flow_processors::neural_engine::is_available() {
-        flags |= 1; // Neural processing available
+    #[cfg(feature = "neural")]
+    {
+        if neural_doc_flow_processors::neural_engine::is_available() {
+            flags |= 1; // Neural processing available
+        }
     }
     
-    flags |= 2; // Security scanning always available
-    flags |= 4; // Streaming processing available
+    #[cfg(feature = "security")]
+    {
+        flags |= 2; // Security scanning available
+    }
+    
+    #[cfg(feature = "streaming")]
+    {
+        flags |= 4; // Streaming processing available
+    }
+    
+    #[cfg(feature = "processing")]
+    {
+        flags |= 8; // Basic processing available
+    }
     
     flags
 }

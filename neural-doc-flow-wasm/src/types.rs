@@ -3,12 +3,27 @@
 //! Architecture Compliance: Zero JavaScript dependencies
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "streaming")]
 use std::collections::HashMap;
+
+#[cfg(feature = "basic")]
 use std::ffi::{CStr, CString};
+
+#[cfg(feature = "basic")]
 use std::os::raw::c_char;
+
+#[cfg(feature = "processing")]
 use neural_doc_flow_core::{ProcessingConfig, Document};
+
+#[cfg(feature = "neural")]
 use neural_doc_flow_processors::ProcessingResult;
-use crate::{WasmProcessingConfig, WasmProcessingResult, SecurityScanResult};
+
+use crate::WasmProcessingConfig;
+use crate::WasmProcessingResult;
+
+#[cfg(feature = "security")]
+use crate::SecurityScanResult;
 
 /// Convert WASM config to core config
 impl WasmProcessingConfig {

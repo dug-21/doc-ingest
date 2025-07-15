@@ -3,43 +3,57 @@
 //! Architecture Compliance: Zero JavaScript dependencies
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "basic")]
 use std::ffi::{CStr, CString};
+
+#[cfg(feature = "basic")]
 use std::os::raw::c_char;
-use thiserror::Error;
+
+#[cfg(feature = "basic")]
+use std::fmt;
 
 /// WASM-specific error types
-#[derive(Error, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WasmError {
-    #[error("Processing error: {message}")]
     ProcessingError { message: String },
-
-    #[error("Invalid input: {message}")]
     InvalidInput { message: String },
-
-    #[error("Configuration error: {message}")]
     ConfigError { message: String },
-
-    #[error("Security error: {message}")]
     SecurityError { message: String },
-
-    #[error("Memory error: {message}")]
     MemoryError { message: String },
-
-    #[error("Timeout error: operation took too long")]
     TimeoutError,
-
-    #[error("Network error: {message}")]
     NetworkError { message: String },
-
-    #[error("Serialization error: {message}")]
     SerializationError { message: String },
-
-    #[error("System error: {message}")]
     SystemError { message: String },
-
-    #[error("Unknown error: {message}")]
     Unknown { message: String },
 }
+
+#[cfg(feature = "basic")]
+impl std::fmt::Display for WasmError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WasmError::ProcessingError { message } => write!(f, "Processing error: {}", message),
+            WasmError::InvalidInput { message } => write!(f, "Invalid input: {}", message),
+            WasmError::ConfigError { message } => write!(f, "Configuration error: {}", message),
+            WasmError::SecurityError { message } => write!(f, "Security error: {}", message),
+            WasmError::MemoryError { message } => write!(f, "Memory error: {}", message),
+            WasmError::TimeoutError => write!(f, "Timeout error: operation took too long"),
+            WasmError::NetworkError { message } => write!(f, "Network error: {}", message),
+            WasmError::SerializationError { message } => write!(f, "Serialization error: {}", message),
+            WasmError::SystemError { message } => write!(f, "System error: {}", message),
+            WasmError::Unknown { message } => write!(f, "Unknown error: {}", message),
+        }
+    }
+}
+
+#[cfg(not(feature = "basic"))]
+impl std::fmt::Display for WasmError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "WasmError")
+    }
+}
+
+impl std::error::Error for WasmError {}
 
 /// C-style error representation
 #[repr(C)]
@@ -94,6 +108,7 @@ impl CWasmError {
 }
 
 /// Convert various error types to WasmError
+#[cfg(feature = "processing")]
 impl From<neural_doc_flow_core::error::ProcessingError> for WasmError {
     fn from(error: neural_doc_flow_core::error::ProcessingError) -> Self {
         WasmError::ProcessingError {
@@ -110,6 +125,7 @@ impl From<std::io::Error> for WasmError {
     }
 }
 
+#[cfg(feature = "streaming")]
 impl From<serde_json::Error> for WasmError {
     fn from(error: serde_json::Error) -> Self {
         WasmError::SerializationError {
@@ -157,8 +173,22 @@ pub struct ErrorContext {
 }
 
 impl ErrorContext {
+    #[cfg(feature = "full")]
     pub fn new(operation: &str) -> Self {
         let timestamp = chrono::Utc::now().to_rfc3339();
+        
+        Self {
+            operation: crate::utils::rust_string_to_c(operation),
+            file_name: std::ptr::null_mut(),
+            file_size: 0,
+            timestamp: crate::utils::rust_string_to_c(&timestamp),
+            stack_trace: std::ptr::null_mut(),
+        }
+    }
+    
+    #[cfg(not(feature = "full"))]
+    pub fn new(operation: &str) -> Self {
+        let timestamp = "no-timestamp".to_string();
         
         Self {
             operation: crate::utils::rust_string_to_c(operation),

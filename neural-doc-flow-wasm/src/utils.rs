@@ -292,7 +292,14 @@ pub fn get_build_info() -> std::collections::HashMap<String, String> {
     
     info.insert("version".to_string(), env!("CARGO_PKG_VERSION").to_string());
     info.insert("name".to_string(), env!("CARGO_PKG_NAME").to_string());
-    info.insert("target".to_string(), env!("TARGET").to_string());
+    
+    // Use runtime target detection instead of compile-time
+    #[cfg(target_arch = "wasm32")]
+    info.insert("target".to_string(), "wasm32-unknown-unknown".to_string());
+    
+    #[cfg(not(target_arch = "wasm32"))]
+    info.insert("target".to_string(), std::env::consts::ARCH.to_string());
+    
     info.insert("profile".to_string(), if cfg!(debug_assertions) { "debug" } else { "release" }.to_string());
     
     #[cfg(target_arch = "wasm32")]
