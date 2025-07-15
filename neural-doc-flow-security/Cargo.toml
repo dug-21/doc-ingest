@@ -56,6 +56,9 @@ parking_lot = { workspace = true }
 rand = "0.8"
 libc = "0.2"
 
+# SIMD dependencies
+wide = { workspace = true }
+
 [dev-dependencies]
 tempfile = { workspace = true }
 criterion = { workspace = true }

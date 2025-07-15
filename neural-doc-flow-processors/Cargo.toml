@@ -1,60 +1,63 @@
 [package]
 name = "neural-doc-flow-processors"
-version = "0.1.0"
-edition = "2021"
-authors = ["DAA Neural Coordinator"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "Neural network processors for high-performance document enhancement"
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 # Core dependency
 neural-doc-flow-core = { path = "../neural-doc-flow-core" }
 
-# Async runtime
-tokio = { version = "1.0", features = ["full"] }
-async-trait = "0.1"
+# Core async and error handling
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
 
 # Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-uuid = { version = "1.0", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+bincode = { workspace = true }
+toml = { workspace = true }
 
 # Error handling
-anyhow = "1.0"
-thiserror = "1.0"
+anyhow = { workspace = true }
+thiserror = { workspace = true }
 
 # Logging
-tracing = "0.1"
+tracing = { workspace = true }
 
 # Text processing
-regex = "1.0"
+regex = { workspace = true }
 
 # Random number generation for neural networks
-rand = "0.8"
+rand = { workspace = true }
 
 # Mathematical operations for neural networks
 ndarray = { workspace = true }
 
 # Performance utilities
-rayon = { version = "1.7", optional = true }
-crossbeam = { version = "0.8", optional = true }
-parking_lot = { version = "0.12", optional = true }
+rayon = { workspace = true, optional = true }
+crossbeam = { workspace = true, optional = true }
+parking_lot = { workspace = true, optional = true }
 
 # SIMD dependencies  
-wide = { version = "0.7", optional = true }
-bytemuck = { version = "1.13", optional = true }
+wide = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
 
 # Neural processing dependencies - Pure Rust with ruv-FANN
-ruv-fann = { version = "0.1.6", optional = true }
+ruv-fann = { workspace = true, optional = true }
 
 # Performance monitoring
-metrics = { version = "0.21", optional = true }
-
-# Binary serialization
-bincode = { workspace = true }
-
-# TOML parsing
-toml = "0.8"
+metrics = { workspace = true, optional = true }
 
 # System utilities
 num_cpus = { workspace = true }
@@ -65,13 +68,10 @@ reqwest = { workspace = true }
 # Memory management
 bytes = { workspace = true }
 
-# Async utilities
-futures = { workspace = true }
-
 [features]
 default = ["performance"]
 performance = ["rayon", "parking_lot", "crossbeam"]
-neural = ["ruv-fann"]
+neural = ["ruv-fann", "simd"]
 simd = ["wide", "bytemuck"]
 monitoring = ["metrics"]
 

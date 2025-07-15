@@ -1,43 +1,72 @@
 [package]
 name = "neural-doc-flow-coordination"
-version = "0.1.0"
-edition = "2021"
-authors = ["DAA Neural Coordinator"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "Distributed Agent Architecture coordination for neural document processing"
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-tokio = { version = "1.0", features = ["full"] }
-async-trait = "0.1"
-uuid = { version = "1.0", features = ["v4", "serde"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
-anyhow = "1.0"
-thiserror = "1.0"
-tracing = "0.1"
-regex = "1.0"
-futures = "0.3"
+# Core async and error handling
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
 
-# Coordination and messaging
-crossbeam = "0.8"
-parking_lot = "0.12"
-dashmap = "5.4"
-rayon = "1.7"
+# Serialization
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+uuid = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Text processing
+regex = { workspace = true }
+
+# High-performance coordination features (feature-gated)
+crossbeam = { workspace = true, optional = true }
+parking_lot = { workspace = true, optional = true }
+dashmap = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
 
 # Core dependency
 neural-doc-flow-core = { path = "../neural-doc-flow-core" }
 
 # Performance monitoring
-metrics = { version = "0.21", optional = true }
+metrics = { workspace = true, optional = true }
 
-# Additional dependencies for agents
-lru = "0.12"
-rand = "0.8"
-md5 = "0.7"
+# Analytics and specialized features (feature-gated)
+lru = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+md5 = { workspace = true, optional = true }
 
 [features]
-default = []
+default = ["minimal"]
+
+# Core feature sets for faster compilation
+minimal = ["serde", "serde_json", "uuid", "chrono", "messaging", "analytics"]
+performance = ["minimal", "rayon", "crossbeam", "parking_lot"]
+full = ["performance", "monitoring", "messaging", "fault-tolerance", "analytics"]
+
+# Feature-gated modules for compilation speed
+messaging = ["dashmap"]
+fault-tolerance = []
 monitoring = ["metrics"]
+analytics = ["lru"]
+
+# Development and testing features
+dev-full = ["full"]
+test-utils = []
 
 [lib]
 name = "neural_doc_flow_coordination"

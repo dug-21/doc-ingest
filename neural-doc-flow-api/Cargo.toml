@@ -14,18 +14,18 @@ name = "neural-doc-api-server"
 path = "src/bin/server.rs"
 
 [dependencies]
-# Workspace dependencies
+# Workspace dependencies (feature-gated for build optimization)
 neural-doc-flow-core = { path = "../neural-doc-flow-core" }
 neural-doc-flow-processors = { path = "../neural-doc-flow-processors" }
 neural-doc-flow-sources = { path = "../neural-doc-flow-sources" }
 neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs" }
-neural-doc-flow-security = { path = "../neural-doc-flow-security" }
+neural-doc-flow-security = { path = "../neural-doc-flow-security", optional = true }
 neural-doc-flow-coordination = { path = "../neural-doc-flow-coordination" }
 
 # Web server framework
 axum.workspace = true
 tower.workspace = true
-tower-http = { workspace = true, features = ["cors", "trace", "timeout", "compression-gzip", "fs"] }
+tower-http = { workspace = true, features = ["cors", "trace", "timeout", "fs"] }
 hyper.workspace = true
 http.workspace = true
 
@@ -38,20 +38,20 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 validator = { workspace = true, features = ["derive"] }
 
-# API documentation
-utoipa.workspace = true
-utoipa-swagger-ui.workspace = true
+# API documentation (feature-gated)
+utoipa = { workspace = true, optional = true }
+utoipa-swagger-ui = { workspace = true, optional = true }
 
-# Authentication and security
-jsonwebtoken.workspace = true
-argon2.workspace = true
-base64.workspace = true
+# Authentication and security (feature-gated)
+jsonwebtoken = { workspace = true, optional = true }
+argon2 = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
 
 # File handling
 multipart.workspace = true
 
-# Database (for job tracking and user management)
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+# Database (feature-gated for job tracking and user management)
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"], optional = true }
 
 # Core utilities
 uuid = { workspace = true, features = ["v4", "serde"] }
@@ -59,23 +59,23 @@ chrono = { workspace = true, features = ["serde"] }
 anyhow.workspace = true
 thiserror.workspace = true
 
-# Logging and tracing
+# Logging and tracing (feature-gated)
 tracing.workspace = true
-tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"], optional = true }
 
 # Configuration
 config = "0.14"
 clap = { version = "4.0", features = ["derive", "env"] }
 
-# Rate limiting
-governor = "0.6"
+# Rate limiting (feature-gated)
+governor = { version = "0.6", optional = true }
 
-# Metrics
+# Metrics (feature-gated)
 metrics.workspace = true
-prometheus.workspace = true
+prometheus = { version = "0.13", optional = true }
 
-# Background job processing
-tokio-cron-scheduler = "0.9"
+# Background job processing (feature-gated)
+tokio-cron-scheduler = { version = "0.9", optional = true }
 
 # Additional utilities
 futures.workspace = true
@@ -90,7 +90,23 @@ reqwest = { version = "0.11", features = ["json", "multipart"] }
 tokio-test = "0.4"
 
 [features]
-default = ["security", "metrics"]
-security = []
+default = ["minimal"]
+
+# Core features
+minimal = []
+full = ["minimal", "database", "auth", "security", "metrics", "docs", "background-jobs"]
+
+# Feature gates for build optimization
+database = ["sqlx"]
+auth = ["jsonwebtoken", "argon2", "base64"]
+security = ["neural-doc-flow-security"]
 metrics = ["prometheus"]
-swagger-ui = []
+docs = ["utoipa", "utoipa-swagger-ui"]
+background-jobs = ["tokio-cron-scheduler"]
+rate-limiting = ["governor"]
+compression = ["tower-http/compression-gzip"]
+tracing = ["tracing-subscriber/env-filter", "tracing-subscriber/json"]
+
+# Development features
+dev-full = ["full"]
+test-utils = []

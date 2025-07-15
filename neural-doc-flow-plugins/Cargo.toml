@@ -37,6 +37,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 toml = "0.8"
 
+# Date/time
+chrono = { workspace = true }
+uuid = { workspace = true }
+
 # Logging
 tracing = { workspace = true }
 

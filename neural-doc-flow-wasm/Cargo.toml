@@ -13,45 +13,71 @@ categories = ["wasm", "text-processing", "web-programming"]
 crate-type = ["cdylib"]
 
 [dependencies]
-# Workspace dependencies
-neural-doc-flow-core = { path = "../neural-doc-flow-core" }
-neural-doc-flow-processors = { path = "../neural-doc-flow-processors" }
-neural-doc-flow-sources = { path = "../neural-doc-flow-sources" }
-neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs" }
-neural-doc-flow-security = { path = "../neural-doc-flow-security" }
+# Workspace dependencies - conditionally compiled for performance
+neural-doc-flow-core = { path = "../neural-doc-flow-core", optional = true }
+neural-doc-flow-processors = { path = "../neural-doc-flow-processors", optional = true }
+neural-doc-flow-sources = { path = "../neural-doc-flow-sources", optional = true }
+neural-doc-flow-outputs = { path = "../neural-doc-flow-outputs", optional = true }
+neural-doc-flow-security = { path = "../neural-doc-flow-security", optional = true }
 
-# Pure Rust WASM dependencies (no JavaScript runtime)
-# All JavaScript dependencies removed for architecture compliance
-
-# Core dependencies
-serde = { workspace = true, features = ["derive"] }
-serde_json.workspace = true
-futures.workspace = true
-uuid = { workspace = true, features = ["v4", "serde"] }
-chrono = { workspace = true, features = ["serde"] }
-anyhow.workspace = true
-thiserror.workspace = true
+# Core dependencies - minimal by default
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
+futures = { workspace = true, optional = true }
+uuid = { workspace = true, features = ["v4", "serde"], optional = true }
+chrono = { workspace = true, features = ["serde"], optional = true }
+anyhow = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
 
 # WASM-specific utilities
 console_error_panic_hook = { workspace = true, optional = true }
 wee_alloc = { workspace = true, optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
 
-# Pure Rust random generation (no JavaScript)
-getrandom = { version = "0.2", features = ["rdrand"] }
-
+# Minimal core for fast compilation
 [dependencies.tokio]
-workspace = true
-features = ["macros", "sync", "time"]
+version = "1.46"
+default-features = false
+optional = true
 
 [features]
-default = ["console_error_panic_hook"]
-wee_alloc = ["dep:wee_alloc"]
+# Fast compilation features
+default = ["minimal"]
+minimal = ["serde"]
 
+# Progressive feature enablement for faster builds
+basic = ["minimal", "wasm-bindgen", "tokio", "anyhow", "thiserror"]
+streaming = ["basic", "futures", "serde_json"]
+processing = ["streaming", "neural-doc-flow-core", "neural-doc-flow-sources"]
+neural = ["processing", "neural-doc-flow-processors"]
+security = ["neural", "neural-doc-flow-security"]
+outputs = ["neural", "neural-doc-flow-outputs"]
+full = ["outputs", "uuid", "chrono"]
+
+# Memory optimization features
+wee_alloc = ["dep:wee_alloc"]
+fast-build = ["minimal"]  # For development - fastest compilation
+native-only = ["basic"]   # Skip WASM-specific dependencies
+web-ready = ["full"]      # All features for web deployment
+
+# Build optimization profiles
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Oz", "--enable-mutable-globals"]
+wasm-opt = ["-Oz", "--enable-mutable-globals", "--enable-bulk-memory"]
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false
+
+[package.metadata.wasm-pack.profile.dev-fast]
+wasm-opt = false
+
+# Target-specific dependencies for build optimization
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"], optional = true }
+chrono = { workspace = true, features = ["serde", "wasm-bindgen"], optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+getrandom = { version = "0.2", features = ["rdrand"], optional = true }
+tokio = { version = "1.46", features = ["macros", "sync", "time", "rt", "rt-multi-thread"], default-features = false, optional = true }
 
 [dev-dependencies]
 # wasm-bindgen-test removed - JavaScript dependency violation
