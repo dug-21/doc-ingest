@@ -4,12 +4,21 @@
 //! This plugin uses a combination of ZIP extraction and XML parsing to handle the
 //! Open XML format used by modern Word documents.
 
-use neural_doc_flow_core::{DocumentSource, ProcessingError, Document};
+use neural_doc_flow_core::{
+    DocumentSource, ProcessingError, Document, SourceError,
+    DocumentId, DocumentType, DocumentSourceType, DocumentContent, DocumentStructure,
+    ImageData, TableData, ImageContent,
+    traits::source::{DocumentMetadata as SourceDocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity},
+    DocumentMetadata,
+};
 use crate::{Plugin, PluginMetadata, PluginCapabilities};
 use std::path::Path;
 use std::io::{Read, Cursor};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use async_trait::async_trait;
+use uuid::Uuid;
+use chrono::Utc;
 
 /// DOCX Parser Plugin implementation
 pub struct DocxParserPlugin {
@@ -123,7 +132,10 @@ impl DocxParserPlugin {
 
         // Read the DOCX file as a ZIP archive
         let file = std::fs::File::open(path)
-            .map_err(|e| ProcessingError::SourceNotFound(format!("Failed to open DOCX file: {}", e)))?;
+            .map_err(|e| ProcessingError::ProcessorFailed {
+                processor_name: "docx_parser".to_string(),
+                reason: format!("Failed to open DOCX file: {}", e),
+            })?;
 
         let mut archive = zip::ZipArchive::new(file)
             .map_err(|e| ProcessingError::ProcessorFailed {
@@ -530,6 +542,7 @@ impl Plugin for DocxParserPlugin {
 }
 
 /// Document source for DOCX files
+#[derive(Debug)]
 pub struct DocxSource {
     config: DocxConfig,
 }
@@ -540,8 +553,14 @@ impl DocxSource {
     }
 }
 
+#[async_trait]
 impl DocumentSource for DocxSource {
-    fn can_process(&self, path: &Path) -> bool {
+    fn source_type(&self) -> &'static str {
+        "docx"
+    }
+    
+    async fn can_handle(&self, input: &str) -> bool {
+        let path = Path::new(input);
         if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
             matches!(ext.to_lowercase().as_str(), "docx" | "docm")
         } else {
@@ -549,7 +568,102 @@ impl DocumentSource for DocxSource {
         }
     }
     
-    fn extract_document(&self, path: &Path) -> Result<Document, ProcessingError> {
+    async fn load_document(&self, input: &str) -> Result<Document, SourceError> {
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(SourceError::DocumentNotFound { path: input.to_string() });
+        }
+        
+        if !self.can_handle(input).await {
+            return Err(SourceError::UnsupportedFormat { 
+                format: path.extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .to_string() 
+            });
+        }
+        
+        self.extract_document_internal(path).await
+            .map_err(|e| SourceError::ParseError { reason: e.to_string() })
+    }
+    
+    async fn get_metadata(&self, input: &str) -> Result<SourceDocumentMetadata, SourceError> {
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(SourceError::DocumentNotFound { path: input.to_string() });
+        }
+        
+        let metadata = std::fs::metadata(path)
+            .map_err(|_e| SourceError::AccessDenied { path: input.to_string() })?;
+            
+        Ok(SourceDocumentMetadata {
+            name: path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown")
+                .to_string(),
+            size: Some(metadata.len()),
+            mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string(),
+            modified: metadata.modified()
+                .ok()
+                .map(|t| chrono::DateTime::from(t)),
+            attributes: HashMap::new(),
+        })
+    }
+    
+    async fn validate(&self, input: &str) -> Result<ValidationResult, SourceError> {
+        let path = Path::new(input);
+        let mut validation = ValidationResult {
+            is_valid: true,
+            issues: Vec::new(),
+            estimated_processing_time: Some(10.0), // Estimated 10 seconds for DOCX
+            confidence: 0.9,
+        };
+        
+        if !path.exists() {
+            validation.add_issue(ValidationIssue {
+                severity: ValidationSeverity::Critical,
+                message: "File does not exist".to_string(),
+                suggestion: Some("Check file path".to_string()),
+            });
+            return Ok(validation);
+        }
+        
+        if !self.can_handle(input).await {
+            validation.add_issue(ValidationIssue {
+                severity: ValidationSeverity::Error,
+                message: "Unsupported file format".to_string(),
+                suggestion: Some("Use .docx or .docm files".to_string()),
+            });
+        }
+        
+        // Check file size
+        if let Ok(metadata) = std::fs::metadata(path) {
+            if metadata.len() > 100 * 1024 * 1024 { // 100MB
+                validation.add_issue(ValidationIssue {
+                    severity: ValidationSeverity::Warning,
+                    message: "Large file size may cause slow processing".to_string(),
+                    suggestion: Some("Consider processing smaller files".to_string()),
+                });
+            }
+        }
+        
+        Ok(validation)
+    }
+    
+    fn supported_extensions(&self) -> Vec<&'static str> {
+        vec!["docx", "docm"]
+    }
+    
+    fn supported_mime_types(&self) -> Vec<&'static str> {
+        vec![
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-word.document.macroEnabled.12"
+        ]
+    }
+}
+
+impl DocxSource {
+    async fn extract_document_internal(&self, path: &Path) -> Result<Document, ProcessingError> {
         let parser = DocxParserPlugin::with_config(self.config.clone());
         let docx_content = parser.parse_docx(path)?;
         
@@ -572,9 +686,59 @@ impl DocumentSource for DocxSource {
             metadata.insert("tables_data".to_string(), tables_json);
         }
 
+        // Read the raw file content
+        let raw_content = std::fs::read(path)
+            .map_err(|e| ProcessingError::ProcessorFailed {
+                processor_name: "docx_parser".to_string(),
+                reason: format!("IO error: {}", e),
+            })?;
+        
+        // Convert DocxContent to DocumentContent
+        let document_content = DocumentContent {
+            text: Some(docx_content.text),
+            images: docx_content.images.into_iter().map(|img| ImageData {
+                id: img.id,
+                format: img.format.clone(),
+                width: img.width.unwrap_or(0),
+                height: img.height.unwrap_or(0),
+                data: ImageContent::Binary(img.data),
+                caption: img.description.clone().or(Some(img.name)),
+            }).collect(),
+            tables: docx_content.tables.into_iter().map(|tbl| TableData {
+                id: tbl.id,
+                headers: tbl.headers.unwrap_or_default(),
+                rows: tbl.rows.into_iter().map(|row| 
+                    row.cells.into_iter().map(|cell| cell.text).collect()
+                ).collect(),
+                caption: tbl.caption,
+            }).collect(),
+            structured: HashMap::new(),
+            raw: None,
+        };
+        
+        // Create document metadata
+        let doc_metadata = DocumentMetadata {
+            title: metadata.get("title").cloned(),
+            authors: vec![],
+            source: path.to_string_lossy().to_string(),
+            mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string(),
+            size: Some(raw_content.len() as u64),
+            language: None,
+            custom: metadata.into_iter().map(|(k, v)| (k, serde_json::Value::String(v))).collect(),
+        };
+        
         Ok(Document {
-            content: docx_content.text,
-            metadata,
+            id: Uuid::new_v4(),
+            doc_type: DocumentType::Unknown,
+            source_type: DocumentSourceType::File,
+            raw_content,
+            metadata: doc_metadata,
+            content: document_content,
+            structure: DocumentStructure::default(),
+            attachments: vec![],
+            processing_history: vec![],
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         })
     }
 }
@@ -599,14 +763,14 @@ mod tests {
         assert!(plugin.metadata().supported_formats.contains(&"docx".to_string()));
     }
 
-    #[test]
-    fn test_source_can_process() {
+    #[tokio::test]
+    async fn test_source_can_handle() {
         let source = DocxSource::new(DocxConfig::default());
         
-        assert!(source.can_process(Path::new("test.docx")));
-        assert!(source.can_process(Path::new("test.docm")));
-        assert!(!source.can_process(Path::new("test.pdf")));
-        assert!(!source.can_process(Path::new("test.txt")));
+        assert!(source.can_handle("test.docx").await);
+        assert!(source.can_handle("test.docm").await);
+        assert!(!source.can_handle("test.pdf").await);
+        assert!(!source.can_handle("test.txt").await);
     }
 
     #[test]

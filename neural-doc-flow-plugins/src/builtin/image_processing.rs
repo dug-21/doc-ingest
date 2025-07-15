@@ -4,18 +4,27 @@
 //! This plugin handles image extraction, enhancement, OCR, and metadata extraction
 //! from various document formats and standalone image files.
 
-use neural_doc_flow_core::{DocumentSource, ProcessingError, Document};
-use neural_doc_flow_processors::neural::{NeuralEngine};
+use neural_doc_flow_core::{
+    DocumentSource, ProcessingError, Document, SourceError,
+    DocumentType as CoreDocumentType, DocumentSourceType, DocumentContent, DocumentStructure,
+    DocumentMetadata as CoreDocumentMetadata,
+    traits::source::{DocumentMetadata as SourceDocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity}
+};
+// Neural engine import temporarily removed - pending implementation
+// use neural_doc_flow_processors::neural::{NeuralEngine};
 use crate::{Plugin, PluginMetadata, PluginCapabilities};
 use std::path::Path;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use async_trait::async_trait;
+use uuid::Uuid;
+use chrono::Utc;
 
 /// Image Processing Plugin implementation
 pub struct ImageProcessingPlugin {
     metadata: PluginMetadata,
     config: ImageProcessingConfig,
-    neural_engine: Option<NeuralEngine>,
+    // neural_engine: Option<NeuralEngine>, // Temporarily disabled
 }
 
 /// Configuration for image processing
@@ -151,7 +160,7 @@ pub struct BoundingBox {
 /// Layout analysis results
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayoutAnalysis {
-    pub document_type: DocumentType,
+    pub document_type: ImageDocumentType,
     pub reading_order: ReadingOrder,
     pub regions: Vec<LayoutRegion>,
     pub columns: u32,
@@ -159,9 +168,9 @@ pub struct LayoutAnalysis {
     pub image_density: f32,
 }
 
-/// Document type classification
+/// Document type classification for image processing
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DocumentType {
+pub enum ImageDocumentType {
     Text,
     Form,
     Table,
@@ -287,7 +296,7 @@ impl ImageProcessingPlugin {
                 },
             },
             config: ImageProcessingConfig::default(),
-            neural_engine: None,
+            // neural_engine: None, // Temporarily disabled
         }
     }
 
@@ -305,7 +314,7 @@ impl ImageProcessingPlugin {
         // For now, we'll use traditional image processing methods
         // Neural enhancement will be added when the neural engine interface is stable
         tracing::info!("Neural features configured but using traditional methods");
-        self.neural_engine = None;
+        // self.neural_engine = None; // Temporarily disabled
         
         Ok(())
     }
@@ -366,7 +375,10 @@ impl ImageProcessingPlugin {
     /// Load image data from file
     fn load_image(&self, path: &Path) -> Result<Vec<u8>, ProcessingError> {
         let data = std::fs::read(path)
-            .map_err(|e| ProcessingError::SourceNotFound(format!("Failed to read image: {}", e)))?;
+            .map_err(|e| ProcessingError::ProcessorFailed {
+                processor_name: "image_processing".to_string(),
+                reason: format!("Failed to read image: {}", e),
+            })?;
 
         // Check size limit
         let size_mb = data.len() / (1024 * 1024);
@@ -533,7 +545,7 @@ impl ImageProcessingPlugin {
     /// Basic layout analysis without neural networks
     fn basic_layout_analysis(&self, _data: &[u8]) -> Option<LayoutAnalysis> {
         Some(LayoutAnalysis {
-            document_type: DocumentType::Mixed,
+            document_type: ImageDocumentType::Mixed,
             reading_order: ReadingOrder::LeftToRight,
             regions: Vec::new(),
             columns: 1,
@@ -572,7 +584,7 @@ impl Plugin for ImageProcessingPlugin {
     
     fn shutdown(&mut self) -> Result<(), ProcessingError> {
         tracing::info!("Shutting down image processing plugin");
-        self.neural_engine = None;
+        // self.neural_engine = None; // Temporarily disabled
         Ok(())
     }
     
@@ -582,6 +594,7 @@ impl Plugin for ImageProcessingPlugin {
 }
 
 /// Document source for image processing
+#[derive(Debug)]
 pub struct ImageProcessingSource {
     config: ImageProcessingConfig,
 }
@@ -592,8 +605,14 @@ impl ImageProcessingSource {
     }
 }
 
+#[async_trait]
 impl DocumentSource for ImageProcessingSource {
-    fn can_process(&self, path: &Path) -> bool {
+    fn source_type(&self) -> &'static str {
+        "image_processing"
+    }
+    
+    async fn can_handle(&self, input: &str) -> bool {
+        let path = Path::new(input);
         if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
             matches!(ext.to_lowercase().as_str(), 
                 "png" | "jpg" | "jpeg" | "tiff" | "tif" | "bmp" | "gif" | "webp" | "pdf")
@@ -602,7 +621,118 @@ impl DocumentSource for ImageProcessingSource {
         }
     }
     
-    fn extract_document(&self, path: &Path) -> Result<Document, ProcessingError> {
+    async fn load_document(&self, input: &str) -> Result<Document, SourceError> {
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(SourceError::DocumentNotFound { path: input.to_string() });
+        }
+        
+        if !self.can_handle(input).await {
+            return Err(SourceError::UnsupportedFormat { 
+                format: path.extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .to_string() 
+            });
+        }
+        
+        self.extract_document_internal(path).await
+            .map_err(|e| SourceError::ParseError { reason: e.to_string() })
+    }
+    
+    async fn get_metadata(&self, input: &str) -> Result<SourceDocumentMetadata, SourceError> {
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(SourceError::DocumentNotFound { path: input.to_string() });
+        }
+        
+        let metadata = std::fs::metadata(path)
+            .map_err(|_e| SourceError::AccessDenied { path: input.to_string() })?;
+            
+        let mime_type = match path.extension().and_then(|s| s.to_str()) {
+            Some("png") => "image/png",
+            Some("jpg") | Some("jpeg") => "image/jpeg",
+            Some("tiff") | Some("tif") => "image/tiff",
+            Some("bmp") => "image/bmp",
+            Some("gif") => "image/gif",
+            Some("webp") => "image/webp",
+            Some("pdf") => "application/pdf",
+            _ => "application/octet-stream",
+        };
+            
+        Ok(SourceDocumentMetadata {
+            name: path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown")
+                .to_string(),
+            size: Some(metadata.len()),
+            mime_type: mime_type.to_string(),
+            modified: metadata.modified()
+                .ok()
+                .map(|t| chrono::DateTime::from(t)),
+            attributes: HashMap::new(),
+        })
+    }
+    
+    async fn validate(&self, input: &str) -> Result<ValidationResult, SourceError> {
+        let path = Path::new(input);
+        let mut validation = ValidationResult {
+            is_valid: true,
+            issues: Vec::new(),
+            estimated_processing_time: Some(20.0), // Estimated 20 seconds for image processing
+            confidence: 0.85,
+        };
+        
+        if !path.exists() {
+            validation.add_issue(ValidationIssue {
+                severity: ValidationSeverity::Critical,
+                message: "File does not exist".to_string(),
+                suggestion: Some("Check file path".to_string()),
+            });
+            return Ok(validation);
+        }
+        
+        if !self.can_handle(input).await {
+            validation.add_issue(ValidationIssue {
+                severity: ValidationSeverity::Error,
+                message: "Unsupported file format".to_string(),
+                suggestion: Some("Use PNG, JPG, JPEG, TIFF, BMP, GIF, WebP, or PDF files".to_string()),
+            });
+        }
+        
+        // Check file size
+        if let Ok(metadata) = std::fs::metadata(path) {
+            if metadata.len() > 50 * 1024 * 1024 { // 50MB
+                validation.add_issue(ValidationIssue {
+                    severity: ValidationSeverity::Warning,
+                    message: "Large file size may cause slow processing".to_string(),
+                    suggestion: Some("Consider processing smaller files".to_string()),
+                });
+            }
+        }
+        
+        Ok(validation)
+    }
+    
+    fn supported_extensions(&self) -> Vec<&'static str> {
+        vec!["png", "jpg", "jpeg", "tiff", "tif", "bmp", "gif", "webp", "pdf"]
+    }
+    
+    fn supported_mime_types(&self) -> Vec<&'static str> {
+        vec![
+            "image/png",
+            "image/jpeg",
+            "image/tiff",
+            "image/bmp",
+            "image/gif",
+            "image/webp",
+            "application/pdf"
+        ]
+    }
+}
+
+impl ImageProcessingSource {
+    async fn extract_document_internal(&self, path: &Path) -> Result<Document, ProcessingError> {
         let mut plugin = ImageProcessingPlugin::with_config(self.config.clone());
         plugin.initialize()?;
         
@@ -652,16 +782,49 @@ impl DocumentSource for ImageProcessingSource {
         
         // Store detailed data in metadata
         metadata.insert("format".to_string(), "image_processing".to_string());
-        metadata.insert("original_format".to_string(), processed_image.format);
+        metadata.insert("original_format".to_string(), processed_image.format.clone());
         metadata.insert("file_size".to_string(), processed_image.file_size.to_string());
         
         if let Ok(image_json) = serde_json::to_string(&processed_image) {
             metadata.insert("processed_image_data".to_string(), image_json);
         }
         
+        // Read the raw file content
+        let raw_content = std::fs::read(path)
+            .map_err(|e| ProcessingError::IoError(e.to_string()))?;
+        
+        // Convert to DocumentContent
+        let document_content = DocumentContent {
+            text: Some(content_parts.join("\n")),
+            images: vec![], // Would contain extracted images
+            tables: vec![], // Would contain extracted tables
+            structured: HashMap::new(),
+            raw: Some(raw_content.clone()),
+        };
+        
+        // Create document metadata
+        let doc_metadata = CoreDocumentMetadata {
+            title: metadata.get("title").cloned(),
+            authors: vec![],
+            source: path.to_string_lossy().to_string(),
+            mime_type: metadata.get("mime_type").cloned().unwrap_or_else(|| "image/unknown".to_string()),
+            size: Some(raw_content.len() as u64),
+            language: None,
+            custom: metadata.into_iter().map(|(k, v)| (k, serde_json::Value::String(v))).collect(),
+        };
+        
         Ok(Document {
-            content: content_parts.join("\n"),
-            metadata,
+            id: Uuid::new_v4(),
+            doc_type: CoreDocumentType::Image,
+            source_type: DocumentSourceType::File,
+            raw_content,
+            metadata: doc_metadata,
+            content: document_content,
+            structure: DocumentStructure::default(),
+            attachments: vec![],
+            processing_history: vec![],
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         })
     }
 }
@@ -684,15 +847,15 @@ mod tests {
         assert!(plugin.metadata().supported_formats.contains(&"png".to_string()));
     }
 
-    #[test]
-    fn test_source_can_process() {
+    #[tokio::test]
+    async fn test_source_can_handle() {
         let source = ImageProcessingSource::new(ImageProcessingConfig::default());
         
-        assert!(source.can_process(Path::new("test.png")));
-        assert!(source.can_process(Path::new("test.jpg")));
-        assert!(source.can_process(Path::new("test.pdf")));
-        assert!(!source.can_process(Path::new("test.docx")));
-        assert!(!source.can_process(Path::new("test.txt")));
+        assert!(source.can_handle("test.png").await);
+        assert!(source.can_handle("test.jpg").await);
+        assert!(source.can_handle("test.pdf").await);
+        assert!(!source.can_handle("test.docx").await);
+        assert!(!source.can_handle("test.txt").await);
     }
 
     #[test]

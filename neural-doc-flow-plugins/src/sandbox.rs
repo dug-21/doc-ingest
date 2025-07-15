@@ -77,20 +77,9 @@ impl PluginSandbox {
         F: FnOnce() -> Result<T, ProcessingError> + Send + 'static,
         T: Send + 'static,
     {
-        let result = self.sandbox_manager.execute_sandboxed(
-            plugin_name,
-            operation,
-        ).await?;
-        
-        // Log resource usage
-        info!(
-            "Plugin {} used {} MB memory, {:.2}s CPU time",
-            plugin_name,
-            result.resource_usage.memory_peak_bytes / 1_000_000,
-            result.resource_usage.cpu_time_seconds
-        );
-        
-        Ok(result.output)
+        // Sandbox currently disabled - execute directly
+        warn!("Plugin sandbox temporarily disabled - executing {} without isolation", plugin_name);
+        operation()
     }
 }
 

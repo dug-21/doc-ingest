@@ -4,18 +4,28 @@
 //! This plugin uses computer vision techniques and neural networks to identify
 //! and extract table structures from images and PDFs where traditional parsing fails.
 
-use neural_doc_flow_core::{DocumentSource, ProcessingError, Document};
-use neural_doc_flow_processors::neural::{NeuralEngine};
+use neural_doc_flow_core::{
+    DocumentSource, ProcessingError, Document, SourceError,
+    DocumentType as CoreDocumentType, DocumentSourceType, DocumentContent, DocumentStructure,
+    ImageData as CoreImageData, TableData,
+    traits::source::{DocumentMetadata as SourceDocumentMetadata, ValidationResult, ValidationIssue, ValidationSeverity},
+    DocumentMetadata,
+};
+// Neural engine import temporarily removed - pending implementation
+// use neural_doc_flow_processors::neural::{NeuralEngine};
 use crate::{Plugin, PluginMetadata, PluginCapabilities};
 use std::path::Path;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use async_trait::async_trait;
+use uuid::Uuid;
+use chrono::Utc;
 
 /// Table Detection Plugin implementation
 pub struct TableDetectionPlugin {
     metadata: PluginMetadata,
     config: TableDetectionConfig,
-    neural_engine: Option<NeuralEngine>,
+    // neural_engine: Option<NeuralEngine>, // Temporarily disabled
 }
 
 /// Configuration for table detection
@@ -156,7 +166,7 @@ impl TableDetectionPlugin {
                 },
             },
             config: TableDetectionConfig::default(),
-            neural_engine: None,
+            // neural_engine: None, // Temporarily disabled
         }
     }
 
@@ -175,7 +185,7 @@ impl TableDetectionPlugin {
             // For now, we'll use traditional computer vision methods
             // Neural enhancement will be added when the neural engine interface is stable
             tracing::info!("Neural enhancement configured but using traditional CV methods");
-            self.neural_engine = None;
+            // self.neural_engine = None; // Temporarily disabled
         }
         
         Ok(())
@@ -192,10 +202,11 @@ impl TableDetectionPlugin {
         let normalized_image = self.preprocess_image(image_data)?;
 
         // Step 2: Neural-based detection if available
-        if let Some(ref engine) = self.neural_engine {
-            if let Ok(neural_tables) = self.neural_table_detection(engine, &normalized_image) {
-                detected_tables.extend(neural_tables);
-            }
+        // Neural enhancement temporarily disabled
+        if false { // if let Some(ref engine) = self.neural_engine {
+            // if let Ok(neural_tables) = self.neural_table_detection(engine, &normalized_image) {
+            //     detected_tables.extend(neural_tables);
+            // }
         }
 
         // Step 3: Traditional computer vision as fallback/supplement
@@ -215,7 +226,7 @@ impl TableDetectionPlugin {
 
             // Extract text if enabled
             if self.config.text_extraction_enabled {
-                table.extracted_text = self.extract_text_from_table(&normalized_image, &table)?;
+                table.extracted_text = self.extract_text_from_table(&normalized_image, &table);
             }
 
             table.metadata.processing_time_ms = start_time.elapsed().as_millis() as u64;
@@ -250,7 +261,9 @@ impl TableDetectionPlugin {
     }
 
     /// Neural-based table detection using trained models
-    fn neural_table_detection(&self, _engine: &NeuralEngine, _image_data: &ImageData) -> Result<Vec<DetectedTable>, ProcessingError> {
+    // Temporarily disabled
+    // fn neural_table_detection(&self, _engine: &NeuralEngine, _image_data: &ImageData) -> Result<Vec<DetectedTable>, ProcessingError> {
+    fn neural_table_detection(&self, _image_data: &ImageData) -> Result<Vec<DetectedTable>, ProcessingError> {
         tracing::debug!("Neural table detection pending.");
         // Return empty vector for now - neural detection will be implemented
         // when the neural engine interface is stabilized
@@ -368,7 +381,7 @@ impl TableDetectionPlugin {
 
     /// Filter and merge overlapping table detections
     fn filter_and_merge_tables(&self, tables: Vec<DetectedTable>) -> Result<Vec<DetectedTable>, ProcessingError> {
-        let mut filtered = Vec::new();
+        let mut filtered: Vec<DetectedTable> = Vec::new();
         
         for table in tables {
             let mut is_duplicate = false;
@@ -564,7 +577,7 @@ impl Plugin for TableDetectionPlugin {
     
     fn shutdown(&mut self) -> Result<(), ProcessingError> {
         tracing::info!("Shutting down table detection plugin");
-        self.neural_engine = None;
+        // self.neural_engine = None; // Temporarily disabled
         Ok(())
     }
     
@@ -574,6 +587,7 @@ impl Plugin for TableDetectionPlugin {
 }
 
 /// Document source for table detection
+#[derive(Debug)]
 pub struct TableDetectionSource {
     config: TableDetectionConfig,
 }
@@ -600,8 +614,14 @@ impl TableDetectionSource {
     }
 }
 
+#[async_trait]
 impl DocumentSource for TableDetectionSource {
-    fn can_process(&self, path: &Path) -> bool {
+    fn source_type(&self) -> &'static str {
+        "table_detection"
+    }
+    
+    async fn can_handle(&self, input: &str) -> bool {
+        let path = Path::new(input);
         if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
             matches!(ext.to_lowercase().as_str(), "pdf" | "png" | "jpg" | "jpeg" | "tiff")
         } else {
@@ -609,7 +629,112 @@ impl DocumentSource for TableDetectionSource {
         }
     }
     
-    fn extract_document(&self, path: &Path) -> Result<Document, ProcessingError> {
+    async fn load_document(&self, input: &str) -> Result<Document, SourceError> {
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(SourceError::DocumentNotFound { path: input.to_string() });
+        }
+        
+        if !self.can_handle(input).await {
+            return Err(SourceError::UnsupportedFormat { 
+                format: path.extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .to_string() 
+            });
+        }
+        
+        self.extract_document_internal(path).await
+            .map_err(|e| SourceError::ParseError { reason: e.to_string() })
+    }
+    
+    async fn get_metadata(&self, input: &str) -> Result<SourceDocumentMetadata, SourceError> {
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(SourceError::DocumentNotFound { path: input.to_string() });
+        }
+        
+        let metadata = std::fs::metadata(path)
+            .map_err(|_e| SourceError::AccessDenied { path: input.to_string() })?;
+            
+        let mime_type = match path.extension().and_then(|s| s.to_str()) {
+            Some("pdf") => "application/pdf",
+            Some("png") => "image/png",
+            Some("jpg") | Some("jpeg") => "image/jpeg",
+            Some("tiff") | Some("tif") => "image/tiff",
+            _ => "application/octet-stream",
+        };
+            
+        Ok(SourceDocumentMetadata {
+            name: path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown")
+                .to_string(),
+            size: Some(metadata.len()),
+            mime_type: mime_type.to_string(),
+            modified: metadata.modified()
+                .ok()
+                .map(|t| chrono::DateTime::from(t)),
+            attributes: HashMap::new(),
+        })
+    }
+    
+    async fn validate(&self, input: &str) -> Result<ValidationResult, SourceError> {
+        let path = Path::new(input);
+        let mut validation = ValidationResult {
+            is_valid: true,
+            issues: Vec::new(),
+            estimated_processing_time: Some(30.0), // Estimated 30 seconds for table detection
+            confidence: 0.8,
+        };
+        
+        if !path.exists() {
+            validation.add_issue(ValidationIssue {
+                severity: ValidationSeverity::Critical,
+                message: "File does not exist".to_string(),
+                suggestion: Some("Check file path".to_string()),
+            });
+            return Ok(validation);
+        }
+        
+        if !self.can_handle(input).await {
+            validation.add_issue(ValidationIssue {
+                severity: ValidationSeverity::Error,
+                message: "Unsupported file format".to_string(),
+                suggestion: Some("Use PDF, PNG, JPG, JPEG, or TIFF files".to_string()),
+            });
+        }
+        
+        // Check file size
+        if let Ok(metadata) = std::fs::metadata(path) {
+            if metadata.len() > 50 * 1024 * 1024 { // 50MB
+                validation.add_issue(ValidationIssue {
+                    severity: ValidationSeverity::Warning,
+                    message: "Large file size may cause slow processing".to_string(),
+                    suggestion: Some("Consider processing smaller files".to_string()),
+                });
+            }
+        }
+        
+        Ok(validation)
+    }
+    
+    fn supported_extensions(&self) -> Vec<&'static str> {
+        vec!["pdf", "png", "jpg", "jpeg", "tiff", "tif"]
+    }
+    
+    fn supported_mime_types(&self) -> Vec<&'static str> {
+        vec![
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "image/tiff"
+        ]
+    }
+}
+
+impl TableDetectionSource {
+    async fn extract_document_internal(&self, path: &Path) -> Result<Document, ProcessingError> {
         let image_data = self.load_image(path)?;
         let mut plugin = TableDetectionPlugin::with_config(self.config.clone());
         plugin.initialize()?;
@@ -643,9 +768,55 @@ impl DocumentSource for TableDetectionSource {
             }
         }
         
+        // Read the raw file content
+        let raw_content = std::fs::read(path)
+            .map_err(|e| ProcessingError::ProcessorFailed {
+                processor_name: "table_detection".to_string(),
+                reason: format!("IO error: {}", e),
+            })?;
+        
+        // Convert detected tables to TableData
+        let table_data: Vec<TableData> = detected_tables.iter().map(|table| {
+            TableData {
+                id: table.id.clone(),
+                headers: table.extracted_text.as_ref().and_then(|rows| rows.first().cloned()).unwrap_or_default(),
+                rows: table.extracted_text.clone().unwrap_or_default(),
+                caption: None,
+            }
+        }).collect();
+        
+        // Create document content
+        let document_content = DocumentContent {
+            text: Some(content_parts.join("\n")),
+            images: vec![],
+            tables: table_data,
+            structured: HashMap::new(),
+            raw: None,
+        };
+        
+        // Create document metadata
+        let doc_metadata = DocumentMetadata {
+            title: metadata.get("title").cloned(),
+            authors: vec![],
+            source: path.to_string_lossy().to_string(),
+            mime_type: metadata.get("mime_type").cloned().unwrap_or_else(|| "image/unknown".to_string()),
+            size: Some(raw_content.len() as u64),
+            language: None,
+            custom: metadata.into_iter().map(|(k, v)| (k, serde_json::Value::String(v))).collect(),
+        };
+        
         Ok(Document {
-            content: content_parts.join("\n"),
-            metadata,
+            id: Uuid::new_v4(),
+            doc_type: CoreDocumentType::Image,
+            source_type: DocumentSourceType::File,
+            raw_content,
+            metadata: doc_metadata,
+            content: document_content,
+            structure: DocumentStructure::default(),
+            attachments: vec![],
+            processing_history: vec![],
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         })
     }
 }
@@ -668,15 +839,15 @@ mod tests {
         assert!(plugin.metadata().supported_formats.contains(&"pdf".to_string()));
     }
 
-    #[test]
-    fn test_source_can_process() {
+    #[tokio::test]
+    async fn test_source_can_handle() {
         let source = TableDetectionSource::new(TableDetectionConfig::default());
         
-        assert!(source.can_process(Path::new("test.pdf")));
-        assert!(source.can_process(Path::new("test.png")));
-        assert!(source.can_process(Path::new("test.jpg")));
-        assert!(!source.can_process(Path::new("test.docx")));
-        assert!(!source.can_process(Path::new("test.txt")));
+        assert!(source.can_handle("test.pdf").await);
+        assert!(source.can_handle("test.png").await);
+        assert!(source.can_handle("test.jpg").await);
+        assert!(!source.can_handle("test.docx").await);
+        assert!(!source.can_handle("test.txt").await);
     }
 
     #[test]

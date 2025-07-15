@@ -5,7 +5,7 @@
 
 use neural_doc_flow_core::ProcessingError;
 use sha2::{Sha256, Digest};
-use ed25519_dalek::{Verifier, PublicKey, Signature, VerifyingKey};
+use ed25519_dalek::{Verifier, Signature, VerifyingKey, SigningKey, Signer};
 use std::path::Path;
 use std::fs;
 use serde::{Serialize, Deserialize};
@@ -371,7 +371,7 @@ pub struct PluginSignatureGenerator {
 impl PluginSignatureGenerator {
     /// Create new signature generator with random key
     pub fn new() -> Self {
-        let signing_key = ed25519_dalek::SigningKey::generate(&mut rand::thread_rng());
+        let signing_key = ed25519_dalek::SigningKey::from_bytes(&rand::random::<[u8; 32]>());
         Self { signing_key }
     }
     
@@ -415,7 +415,11 @@ impl PluginSignatureGenerator {
         );
         
         // Generate signature
-        let signature = self.signing_key.sign(message.as_bytes());
+        let signature = self.signing_key.try_sign(message.as_bytes())
+            .map_err(|e| ProcessingError::ProcessorFailed {
+                processor_name: "signature".to_string(),
+                reason: format!("Failed to sign message: {}", e),
+            })?;
         
         Ok(PluginSignature {
             plugin_hash,

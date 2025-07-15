@@ -273,7 +273,7 @@ impl PluginManager {
         let mut registry = self.registry.write().await;
         
         // Store old version for potential rollback
-        let old_plugin = registry.get_plugin(plugin_name).cloned();
+        let old_plugin = registry.get_plugin(plugin_name);
         
         // Unload current version
         if let Err(e) = registry.unregister_plugin(plugin_name) {
@@ -324,8 +324,9 @@ impl PluginManager {
     ) -> Result<(), ProcessingError> {
         info!("Starting hot-reload monitor");
         
-        // Create file watcher
-        let reload_tx = self.reload_tx.clone();
+        // Create file watcher  
+        let reload_tx_watcher = self.reload_tx.clone();
+        let reload_tx_async = self.reload_tx.clone();
         let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
             match res {
                 Ok(event) => {
@@ -340,7 +341,7 @@ impl PluginManager {
                                 _ => return,
                             };
                             
-                            let _ = reload_tx.blocking_send(PluginReload {
+                            let _ = reload_tx_watcher.blocking_send(PluginReload {
                                 plugin_path: path.to_path_buf(),
                                 action,
                                 timestamp: std::time::Instant::now(),
@@ -410,7 +411,7 @@ impl PluginManager {
                                             
                                             // Schedule retry
                                             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                                            if reload_tx.send(retry_reload).await.is_err() {
+                                            if reload_tx_async.send(retry_reload).await.is_err() {
                                                 error!("Failed to schedule plugin reload retry");
                                             }
                                         }
@@ -439,7 +440,7 @@ impl PluginManager {
                                     };
                                     
                                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                                    if reload_tx.send(retry_reload).await.is_err() {
+                                    if reload_tx_async.send(retry_reload).await.is_err() {
                                         error!("Failed to schedule plugin reload retry");
                                     }
                                 }
