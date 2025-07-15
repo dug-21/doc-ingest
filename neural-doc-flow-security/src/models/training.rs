@@ -939,7 +939,7 @@ fn generate_training_report(models_dir: &Path, reports: &[(String, TrainingResul
     
     let report_path = models_dir.join("training_report.json");
     std::fs::write(&report_path, serde_json::to_string_pretty(&report)?)
-        .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+        .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
     
     println!("📊 Training report generated: {:?}", report_path);
     

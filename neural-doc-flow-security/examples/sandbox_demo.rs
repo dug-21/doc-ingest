@@ -17,7 +17,7 @@ use std::time::Instant;
 #[tokio::main]
 async fn main() -> Result<(), ProcessingError> {
     // Initialize tracing
-    tracing_subscriber::init();
+    tracing_subscriber::fmt::init();
 
     println!("🔒 Neural Doc Flow Sandbox Demo");
     println!("================================");

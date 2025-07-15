@@ -395,7 +395,6 @@ impl Default for PerformanceMetrics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::ContentBlock;
 
     #[test]
     fn test_training_data() {

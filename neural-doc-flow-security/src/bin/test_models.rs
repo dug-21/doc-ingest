@@ -103,7 +103,7 @@ fn test_malware_detector(models_dir: &PathBuf, malware_features: &SecurityFeatur
     
     println!("  🦠 Malware sample:");
     println!("    Probability: {:.3}", malware_result.probability);
-    println!("    Is malicious: {}", malware_result.is_malicious);
+    println!("    Is malicious: {}", malware_result.is_malware);
     println!("    Confidence: {:.3}", malware_result.confidence);
     println!("    Threat level: {:?}", malware_result.threat_level);
     
@@ -113,7 +113,7 @@ fn test_malware_detector(models_dir: &PathBuf, malware_features: &SecurityFeatur
     
     println!("  ✅ Benign sample:");
     println!("    Probability: {:.3}", benign_result.probability);
-    println!("    Is malicious: {}", benign_result.is_malicious);
+    println!("    Is malicious: {}", benign_result.is_malware);
     println!("    Confidence: {:.3}", benign_result.confidence);
     println!("    Threat level: {:?}", benign_result.threat_level);
     

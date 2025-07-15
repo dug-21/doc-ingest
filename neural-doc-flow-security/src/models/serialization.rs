@@ -58,10 +58,10 @@ impl ModelSerializer {
         // Save metadata
         let metadata_path = model_path.with_extension("json");
         let metadata_json = serde_json::to_string_pretty(metadata)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         fs::write(&metadata_path, metadata_json)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         println!("Model metadata saved to {:?}", metadata_path);
         Ok(())
@@ -75,23 +75,23 @@ impl ModelSerializer {
     ) -> Result<(), ProcessingError> {
         // Create package directory
         fs::create_dir_all(package_path)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         // Copy model file
         let model_name = model_path.file_name()
-            .ok_or_else(|| ProcessingError::Serialization("Invalid model path".to_string()))?;
+            .ok_or_else(|| ProcessingError::SerializationError("Invalid model path".to_string()))?;
         let package_model_path = package_path.join(model_name);
         
         fs::copy(model_path, &package_model_path)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         // Save metadata
         let metadata_path = package_path.join("metadata.json");
         let metadata_json = serde_json::to_string_pretty(metadata)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         fs::write(&metadata_path, metadata_json)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         // Create package info
         let package_info = PackageInfo {
@@ -103,10 +103,10 @@ impl ModelSerializer {
         };
         
         let package_info_json = serde_json::to_string_pretty(&package_info)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         fs::write(package_path.join("package.json"), package_info_json)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         println!("Model package created at {:?}", package_path);
         Ok(())
@@ -118,7 +118,7 @@ impl ModelSerializer {
         export_path: &Path,
     ) -> Result<(), ProcessingError> {
         fs::create_dir_all(export_path)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         let mut deployment_manifest = DeploymentManifest {
             models: Vec::new(),
@@ -128,14 +128,14 @@ impl ModelSerializer {
         
         for (model_path, metadata) in models {
             let model_name = model_path.file_stem()
-                .ok_or_else(|| ProcessingError::Serialization("Invalid model path".to_string()))?
+                .ok_or_else(|| ProcessingError::SerializationError("Invalid model path".to_string()))?
                 .to_string_lossy()
                 .to_string();
             
             // Copy model
             let export_model_path = export_path.join(format!("{}.fann", model_name));
             fs::copy(model_path, &export_model_path)
-                .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+                .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
             
             // Add to manifest
             deployment_manifest.models.push(DeploymentModel {
@@ -149,10 +149,10 @@ impl ModelSerializer {
         
         // Save deployment manifest
         let manifest_json = serde_json::to_string_pretty(&deployment_manifest)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         fs::write(export_path.join("deployment_manifest.json"), manifest_json)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         println!("Models exported for deployment to {:?}", export_path);
         Ok(())
@@ -166,10 +166,10 @@ impl ModelDeserializer {
     /// Load model metadata
     pub fn load_metadata(metadata_path: &Path) -> Result<ModelMetadata, ProcessingError> {
         let metadata_json = fs::read_to_string(metadata_path)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         let metadata: ModelMetadata = serde_json::from_str(&metadata_json)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         Ok(metadata)
     }
@@ -179,10 +179,10 @@ impl ModelDeserializer {
         // Load package info
         let package_info_path = package_path.join("package.json");
         let package_info_json = fs::read_to_string(&package_info_path)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         let package_info: PackageInfo = serde_json::from_str(&package_info_json)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         // Load metadata
         let metadata_path = package_path.join(&package_info.metadata_file);
@@ -197,10 +197,10 @@ impl ModelDeserializer {
     /// Load deployment manifest
     pub fn load_deployment_manifest(manifest_path: &Path) -> Result<DeploymentManifest, ProcessingError> {
         let manifest_json = fs::read_to_string(manifest_path)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         let manifest: DeploymentManifest = serde_json::from_str(&manifest_json)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         Ok(manifest)
     }
@@ -211,7 +211,7 @@ impl ModelDeserializer {
         expected_checksum: &str,
     ) -> Result<bool, ProcessingError> {
         let model_data = fs::read(model_path)
-            .map_err(|e| ProcessingError::Validation(e.to_string()))?;
+            .map_err(|e| ProcessingError::ValidationError(e.to_string()))?;
         
         let checksum = Self::calculate_checksum(&model_data);
         Ok(checksum == expected_checksum)
@@ -266,26 +266,26 @@ impl ModelBackup {
         backup_dir: &Path,
     ) -> Result<(), ProcessingError> {
         fs::create_dir_all(backup_dir)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         let backup_timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
         let backup_path = backup_dir.join(format!("models_backup_{}", backup_timestamp));
         fs::create_dir_all(&backup_path)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         // Copy all model files
         for entry in fs::read_dir(models_dir)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))? {
-            let entry = entry.map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))? {
+            let entry = entry.map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
             let path = entry.path();
             
             if path.is_file() {
                 let file_name = path.file_name()
-                    .ok_or_else(|| ProcessingError::Serialization("Invalid file name".to_string()))?;
+                    .ok_or_else(|| ProcessingError::SerializationError("Invalid file name".to_string()))?;
                 let backup_file_path = backup_path.join(file_name);
                 
                 fs::copy(&path, &backup_file_path)
-                    .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+                    .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
             }
         }
         
@@ -295,15 +295,15 @@ impl ModelBackup {
             source_dir: models_dir.to_string_lossy().to_string(),
             backup_dir: backup_path.to_string_lossy().to_string(),
             files_count: fs::read_dir(&backup_path)
-                .map_err(|e| ProcessingError::Serialization(e.to_string()))?
+                .map_err(|e| ProcessingError::SerializationError(e.to_string()))?
                 .count(),
         };
         
         let manifest_json = serde_json::to_string_pretty(&backup_manifest)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         fs::write(backup_path.join("backup_manifest.json"), manifest_json)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         println!("Models backed up to {:?}", backup_path);
         Ok(())
@@ -368,10 +368,10 @@ impl ModelRegistry {
     /// Save registry to disk
     pub fn save(&self, path: &Path) -> Result<(), ProcessingError> {
         let registry_json = serde_json::to_string_pretty(self)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         fs::write(path, registry_json)
-            .map_err(|e| ProcessingError::Serialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::SerializationError(e.to_string()))?;
         
         Ok(())
     }
@@ -379,10 +379,10 @@ impl ModelRegistry {
     /// Load registry from disk
     pub fn load(path: &Path) -> Result<Self, ProcessingError> {
         let registry_json = fs::read_to_string(path)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         let registry: ModelRegistry = serde_json::from_str(&registry_json)
-            .map_err(|e| ProcessingError::Deserialization(e.to_string()))?;
+            .map_err(|e| ProcessingError::DeserializationError(e.to_string()))?;
         
         Ok(registry)
     }
