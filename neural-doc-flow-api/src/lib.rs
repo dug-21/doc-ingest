@@ -7,13 +7,17 @@ pub mod auth;
 pub mod config;
 pub mod error;
 pub mod handlers;
+#[cfg(any(feature = "auth", feature = "metrics", feature = "rate-limiting"))]
 pub mod middleware;
 pub mod models;
 pub mod routes;
+#[cfg(feature = "security")]
 pub mod security;
 pub mod state;
 pub mod utils;
+#[cfg(feature = "background-jobs")]
 pub mod jobs;
+#[cfg(feature = "metrics")]
 pub mod monitoring;
 
 use axum::{
@@ -29,7 +33,9 @@ use tower_http::{
     timeout::TimeoutLayer,
     compression::CompressionLayer,
 };
+#[cfg(feature = "docs")]
 use utoipa::OpenApi;
+#[cfg(feature = "docs")]
 use utoipa_swagger_ui::SwaggerUi;
 
 pub use config::ServerConfig;
@@ -37,6 +43,7 @@ pub use error::{ApiError, ApiResult};
 pub use state::AppState;
 
 /// OpenAPI documentation
+#[cfg(feature = "docs")]
 #[derive(OpenApi)]
 #[openapi(
     paths(
@@ -102,35 +109,57 @@ pub fn create_app(state: Arc<AppState>) -> Router {
         ])
         .allow_headers(tower_http::cors::Any);
 
-    let middleware_stack = ServiceBuilder::new()
+    let mut middleware_stack = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
-        .layer(CompressionLayer::new())
         .layer(TimeoutLayer::new(std::time::Duration::from_secs(300))) // 5 minute timeout
-        .layer(cors)
-        .layer(axum_middleware::from_fn_with_state(
-            state.clone(),
-            middleware::rate_limit::rate_limit_middleware,
-        ))
-        .layer(axum_middleware::from_fn_with_state(
-            state.clone(),
-            middleware::auth::auth_middleware,
-        ))
-        .layer(axum_middleware::from_fn(middleware::logging::logging_middleware))
+        .layer(cors);
+
+    #[cfg(feature = "compression")]
+    let middleware_stack = middleware_stack.layer(CompressionLayer::new());
+
+    #[cfg(feature = "rate-limiting")]
+    let middleware_stack = middleware_stack.layer(axum_middleware::from_fn_with_state(
+        state.clone(),
+        middleware::rate_limit::rate_limit_middleware,
+    ));
+
+    #[cfg(feature = "auth")]
+    let middleware_stack = middleware_stack.layer(axum_middleware::from_fn_with_state(
+        state.clone(),
+        middleware::auth::auth_middleware,
+    ));
+
+    #[cfg(any(feature = "auth", feature = "metrics", feature = "rate-limiting"))]
+    let middleware_stack = middleware_stack
+        .layer(axum_middleware::from_fn(middleware::logging::logging_middleware));
+
+    #[cfg(feature = "metrics")]
+    let middleware_stack = middleware_stack
         .layer(axum_middleware::from_fn(middleware::metrics::metrics_middleware));
 
-    Router::new()
+    let mut app = Router::new()
         // API routes
         .nest("/api/v1", routes::api_routes())
         
         // Health check (no auth required)
         .route("/health", axum::routing::get(handlers::health::health_check))
-        .route("/ready", axum::routing::get(handlers::health::readiness_check))
-        .route("/metrics", axum::routing::get(handlers::metrics::metrics_handler))
-        
-        // OpenAPI documentation
-        .merge(SwaggerUi::new("/docs")
-            .url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .route("/openapi.json", axum::routing::get(handlers::openapi::openapi_spec))
+        .route("/ready", axum::routing::get(handlers::health::readiness_check));
+
+    #[cfg(feature = "metrics")]
+    {
+        app = app.route("/metrics", axum::routing::get(handlers::metrics::metrics_handler));
+    }
+
+    #[cfg(feature = "docs")]
+    {
+        app = app
+            // OpenAPI documentation
+            .merge(SwaggerUi::new("/docs")
+                .url("/api-docs/openapi.json", ApiDoc::openapi()))
+            .route("/openapi.json", axum::routing::get(handlers::openapi::openapi_spec));
+    }
+
+    app
         
         // Set body size limit to 100MB for large documents
         .layer(DefaultBodyLimit::max(100 * 1024 * 1024))
@@ -150,9 +179,11 @@ pub async fn start_server(config: ServerConfig) -> Result<(), Box<dyn std::error
     let state = Arc::new(AppState::new(config.clone()).await?);
 
     // Start background job processor
+    #[cfg(feature = "background-jobs")]
     jobs::start_job_processor(state.clone()).await;
 
     // Start metrics collector
+    #[cfg(feature = "metrics")]
     monitoring::start_metrics_collector(state.clone()).await;
 
     // Create the application

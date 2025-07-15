@@ -1,14 +1,52 @@
 //! Authentication and authorization management
 
+#[cfg(feature = "auth")]
 use std::sync::Arc;
+#[cfg(all(feature = "auth", feature = "database"))]
 use sqlx::{Pool, Sqlite};
+#[cfg(feature = "auth")]
 use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "auth")]
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+#[cfg(feature = "auth")]
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 
 use crate::error::{ApiError, ApiResult};
+// Import auth models conditionally
+#[cfg(feature = "auth")]
 use crate::models::{LoginRequest, LoginResponse, RegisterRequest, UserInfo};
+
+// Mock models when auth is disabled
+#[cfg(not(feature = "auth"))]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoginRequest {
+    pub username: String,
+    pub password: String,
+}
+
+#[cfg(not(feature = "auth"))]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoginResponse {
+    pub token: String,
+    pub user: UserInfo,
+}
+
+#[cfg(not(feature = "auth"))]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub password: String,
+    pub email: String,
+}
+
+#[cfg(not(feature = "auth"))]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserInfo {
+    pub id: String,
+    pub username: String,
+    pub role: String,
+}
 
 /// JWT claims structure
 #[derive(Debug, Serialize, Deserialize)]
@@ -20,13 +58,59 @@ pub struct Claims {
     pub iat: usize,   // Issued at
 }
 
+// Mock implementation when auth feature is disabled
+#[cfg(not(feature = "auth"))]
+impl Claims {
+    pub fn mock() -> Self {
+        Self {
+            sub: "anonymous".to_string(),
+            username: "anonymous".to_string(),
+            role: "user".to_string(),
+            exp: 0,
+            iat: 0,
+        }
+    }
+}
+
 /// Authentication manager
+#[cfg(feature = "auth")]
 pub struct AuthManager {
     jwt_secret: String,
+    #[cfg(feature = "database")]
     db: Pool<Sqlite>,
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
     validation: Validation,
+}
+
+/// Mock authentication manager for when auth is disabled
+#[cfg(not(feature = "auth"))]
+pub struct AuthManager;
+
+#[cfg(not(feature = "auth"))]
+impl AuthManager {
+    pub fn new(_jwt_secret: String) -> Self {
+        Self
+    }
+    
+    pub async fn login(&self, _request: LoginRequest) -> ApiResult<LoginResponse> {
+        Ok(LoginResponse {
+            token: "mock-token".to_string(),
+            user: UserInfo {
+                id: "mock-id".to_string(),
+                username: "anonymous".to_string(),
+                role: "user".to_string(),
+            },
+        })
+    }
+    
+    pub async fn register(&self, _request: RegisterRequest) -> ApiResult<()> {
+        Ok(())
+    }
+    
+    pub fn verify_token(&self, _token: &str) -> ApiResult<Claims> {
+        Ok(Claims::mock())
+    }
 }
 
 impl AuthManager {

@@ -177,6 +177,23 @@ pub struct DocumentContent {
     pub raw: Option<Vec<u8>>,
 }
 
+impl std::fmt::Display for DocumentContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(text) = &self.text {
+            write!(f, "{}", text)
+        } else if !self.images.is_empty() {
+            write!(f, "[Document contains {} image(s)]", self.images.len())
+        } else if !self.tables.is_empty() {
+            write!(f, "[Document contains {} table(s)]", self.tables.len())
+        } else if !self.structured.is_empty() {
+            write!(f, "[Document contains structured data: {}]", 
+                   self.structured.keys().cloned().collect::<Vec<_>>().join(", "))
+        } else {
+            write!(f, "[Empty document content]")
+        }
+    }
+}
+
 /// Image data representation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageData {

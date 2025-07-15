@@ -56,32 +56,16 @@ pub async fn process_document(
     // Generate job ID
     let job_id = uuid::Uuid::new_v4().to_string();
 
-    // Check cache first
-    let cache_key = state.generate_cache_key(
-        &format!("{:x}", md5::compute(&content)),
-        &state.config.processing_config(),
-    );
+    // Generate cache key for content
+    let content_hash = format!("{:x}", md5::compute(&content));
+    let processing_config = convert_processing_options(request.options.clone());
+    let cache_key = state.generate_cache_key(&content_hash, &processing_config);
 
     if let Some(cached_result) = state.get_cached_result(&cache_key) {
         return Ok(Json(ProcessResponse {
             job_id,
             status: JobStatus::Completed,
-            result: Some(crate::models::ProcessingResult {
-                success: cached_result.success,
-                content: cached_result.content,
-                document_metadata: cached_result.metadata,
-                outputs: std::collections::HashMap::new(), // TODO: convert outputs
-                security_results: None, // TODO: convert security results
-                warnings: cached_result.warnings,
-                statistics: crate::models::ProcessingStatistics {
-                    processing_time_ms: cached_result.processing_time_ms as u64,
-                    neural_time_ms: None,
-                    security_time_ms: None,
-                    memory_usage_bytes: 0,
-                    pages_processed: None,
-                    character_count: Some(cached_result.content.len() as u64),
-                },
-            }),
+            result: Some(convert_processing_result(cached_result)),
             estimated_completion: None,
             submitted_at: chrono::Utc::now(),
             warnings: vec![],
@@ -111,12 +95,10 @@ pub async fn process_document(
             warnings: vec![],
         }))
     } else {
-        // Process synchronously
+        // Process synchronously using state processor
         let document = neural_doc_flow_core::Document::from_bytes(content, request.filename)?;
-        let processing_config = convert_processing_options(request.options);
-        let processor = neural_doc_flow_core::DocumentProcessor::new(processing_config)?;
         
-        let result = processor.process(document).await?;
+        let result = state.processor.process(document).await?;
 
         // Cache the result
         state.cache_result(cache_key, result.clone());
@@ -227,17 +209,17 @@ fn convert_processing_options(options: crate::models::ProcessingOptions) -> neur
 fn convert_processing_result(result: neural_doc_flow_processors::ProcessingResult) -> crate::models::ProcessingResult {
     crate::models::ProcessingResult {
         success: result.success,
-        content: result.content,
-        document_metadata: result.metadata,
+        content: result.content.clone(),
+        document_metadata: result.metadata.unwrap_or_default(),
         outputs: std::collections::HashMap::new(), // TODO: convert outputs
         security_results: None, // TODO: convert security results
-        warnings: result.warnings,
+        warnings: result.warnings.unwrap_or_default(),
         statistics: crate::models::ProcessingStatistics {
-            processing_time_ms: result.processing_time_ms as u64,
-            neural_time_ms: None,
-            security_time_ms: None,
-            memory_usage_bytes: 0, // TODO: track memory usage
-            pages_processed: None,
+            processing_time_ms: result.processing_time_ms.unwrap_or(0) as u64,
+            neural_time_ms: result.neural_time_ms.map(|t| t as u64),
+            security_time_ms: result.security_time_ms.map(|t| t as u32),
+            memory_usage_bytes: result.memory_usage.unwrap_or(0),
+            pages_processed: result.pages_processed.map(|p| p as u32),
             character_count: Some(result.content.len() as u64),
         },
     }
