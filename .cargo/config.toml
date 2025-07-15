@@ -1,0 +1,19 @@
+# Cargo build configuration for neural-doc-flow workspace
+
+[build]
+incremental = true
+target-dir = "target"
+
+[target.x86_64-unknown-linux-gnu]
+# Optimize for the target architecture
+rustflags = [
+    "-C", "target-cpu=native",
+]
+
+[registries.crates-io]
+protocol = "sparse"  # Use sparse registry for faster dependency resolution
+
+# Network settings for faster dependency downloads
+[net]
+retry = 3
+git-fetch-with-cli = false

@@ -1,0 +1,63 @@
+# Build optimization configuration for neural-doc-flow-api
+# Improves compilation speed through parallel compilation and caching
+
+[build]
+# Use more parallel jobs for faster compilation
+jobs = 8
+
+# Enable incremental compilation
+incremental = true
+
+# Target-specific optimizations (commented out due to lld unavailability)
+# [target.x86_64-unknown-linux-gnu]
+# rustflags = [
+#     # Link-time optimizations for better performance
+#     "-C", "linker=clang",
+#     "-C", "link-arg=-fuse-ld=lld",
+#     # Reduce binary size
+#     "-C", "strip=symbols",
+# ]
+
+# Profile-specific optimizations
+[profile.dev]
+# Faster compilation in debug mode
+opt-level = 0
+debug = 1  # Reduced debug info for faster compilation
+incremental = true
+codegen-units = 16  # More parallel compilation
+
+[profile.dev.package."*"]
+# Optimize dependencies even in debug mode for better runtime performance
+opt-level = 2
+
+[profile.release-fast]
+# Fast release profile for testing
+inherits = "release"
+opt-level = 2
+debug = false
+strip = true
+lto = "thin"
+codegen-units = 1
+
+# Feature-specific configurations
+[env]
+# Skip sqlx offline checks in development
+SQLX_OFFLINE = "true"
+
+# Cache configuration
+[net]
+git-fetch-with-cli = false
+
+[registry]
+# Use sparse index for faster dependency resolution
+default = "sparse+"
+
+# Compiler warnings configuration
+[lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+all = "warn"
+cargo = "warn"
+nursery = "warn"
