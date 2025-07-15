@@ -1,0 +1,14 @@
+   Compiling neural-doc-flow-core v0.1.0 (/workspaces/doc-ingest/neural-doc-flow-core)
+   Compiling half v2.6.0
+error[E0765]: unterminated double quote string
+    --> neural-doc-flow-core/src/engine.rs:1078:54
+     |
+1078 |                       warn!("Custom security action: {}", action);
+     |  ______________________________________________________^
+...    |
+1173 | | }
+     | |_^
+
+For more information about this error, try `rustc --explain E0765`.
+error: could not compile `neural-doc-flow-core` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
