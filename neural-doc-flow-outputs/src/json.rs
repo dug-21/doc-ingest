@@ -57,34 +57,46 @@ impl DocumentOutput for JsonOutput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use neural_doc_flow_core::{DocumentMetadata};
+    use neural_doc_flow_core::{DocumentMetadata, DocumentContent, DocumentStructure, DocumentType, DocumentSourceType};
     use uuid::Uuid;
     use chrono::Utc;
+    use std::collections::HashMap;
     
     #[tokio::test]
     async fn test_json_output() {
         let output = JsonOutput::new();
         
         let metadata = DocumentMetadata {
-            id: Uuid::new_v4(),
-            title: "Test Document".to_string(),
-            author: Some("Test Author".to_string()),
-            created_at: Utc::now(),
-            modified_at: Utc::now(),
-            source_path: None,
-            format: "test".to_string(),
-            size: 100,
+            title: Some("Test Document".to_string()),
+            authors: vec!["Test Author".to_string()],
+            source: "test.txt".to_string(),
+            mime_type: "text/plain".to_string(),
+            size: Some(100),
             language: Some("en".to_string()),
-            tags: vec!["test".to_string()],
+            custom: HashMap::new(),
         };
         
+        let content = DocumentContent {
+            text: Some("Test content".to_string()),
+            images: Vec::new(),
+            tables: Vec::new(),
+            structured: HashMap::new(),
+            raw: Some(b"Test content".to_vec()),
+        };
+        
+        let now = Utc::now();
         let document = Document {
-            metadata,
-            content: "Test content".to_string(),
+            id: Uuid::new_v4(),
+            doc_type: DocumentType::Text,
+            source_type: DocumentSourceType::File,
             raw_content: b"Test content".to_vec(),
-            extracted_text: "Test content".to_string(),
-            structure: None,
+            metadata,
+            content,
+            structure: DocumentStructure::default(),
             attachments: Vec::new(),
+            processing_history: Vec::new(),
+            created_at: now,
+            updated_at: now,
         };
         
         let bytes = output.generate_bytes(&document).await.unwrap();

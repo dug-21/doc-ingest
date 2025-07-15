@@ -3,7 +3,7 @@
 //! Output generation and formatting for neural document flow system.
 //! This crate provides traits and implementations for various output formats.
 
-use neural_doc_flow_core::{Document, Result};
+use neural_doc_flow_core::{Document, Result, error::{NeuralDocFlowError, OutputError}};
 use async_trait::async_trait;
 use std::path::Path;
 
@@ -44,9 +44,17 @@ pub trait DocumentOutput: Send + Sync {
 }
 
 /// Output manager that can handle multiple output formats
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct OutputManager {
     outputs: Vec<Box<dyn DocumentOutput>>,
+}
+
+impl std::fmt::Debug for OutputManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OutputManager")
+            .field("outputs", &format!("{} output(s)", self.outputs.len()))
+            .finish()
+    }
 }
 
 impl OutputManager {
@@ -96,7 +104,7 @@ impl OutputManager {
         if let Some(output) = self.find_output(format) {
             output.generate(document, output_path).await
         } else {
-            Err(anyhow::anyhow!("No output formatter found for format: {}", format))
+            Err(NeuralDocFlowError::OutputError(OutputError::UnsupportedFormat { format: format.to_string() }))
         }
     }
     
@@ -105,7 +113,7 @@ impl OutputManager {
         if let Some(output) = self.find_output(format) {
             output.generate_bytes(document).await
         } else {
-            Err(anyhow::anyhow!("No output formatter found for format: {}", format))
+            Err(NeuralDocFlowError::OutputError(OutputError::UnsupportedFormat { format: format.to_string() }))
         }
     }
     

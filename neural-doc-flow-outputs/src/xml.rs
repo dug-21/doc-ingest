@@ -47,46 +47,85 @@ impl DocumentOutput for XmlOutput {
         
         // Metadata section
         xml.push_str("  <metadata>\n");
-        xml.push_str(&format!("    <id>{}</id>\n", document.metadata.id));
-        xml.push_str(&format!("    <title>{}</title>\n", xml_escape(&document.metadata.title)));
+        xml.push_str(&format!("    <id>{}</id>\n", document.id));
+        let title = document.metadata.title.as_deref().unwrap_or("Untitled Document");
+        xml.push_str(&format!("    <title>{}</title>\n", xml_escape(title)));
         
-        if let Some(author) = &document.metadata.author {
-            xml.push_str(&format!("    <author>{}</author>\n", xml_escape(author)));
+        if !document.metadata.authors.is_empty() {
+            xml.push_str("    <authors>\n");
+            for author in &document.metadata.authors {
+                xml.push_str(&format!("      <author>{}</author>\n", xml_escape(author)));
+            }
+            xml.push_str("    </authors>\n");
         }
         
-        xml.push_str(&format!("    <format>{}</format>\n", xml_escape(&document.metadata.format)));
-        xml.push_str(&format!("    <size>{}</size>\n", document.metadata.size));
-        xml.push_str(&format!("    <created>{}</created>\n", document.metadata.created_at.to_rfc3339()));
-        xml.push_str(&format!("    <modified>{}</modified>\n", document.metadata.modified_at.to_rfc3339()));
+        xml.push_str(&format!("    <mime_type>{}</mime_type>\n", xml_escape(&document.metadata.mime_type)));
+        if let Some(size) = document.metadata.size {
+            xml.push_str(&format!("    <size>{}</size>\n", size));
+        }
+        xml.push_str(&format!("    <created>{}</created>\n", document.created_at.to_rfc3339()));
+        xml.push_str(&format!("    <modified>{}</modified>\n", document.updated_at.to_rfc3339()));
         
         if let Some(language) = &document.metadata.language {
             xml.push_str(&format!("    <language>{}</language>\n", xml_escape(language)));
         }
         
-        if !document.metadata.tags.is_empty() {
-            xml.push_str("    <tags>\n");
-            for tag in &document.metadata.tags {
-                xml.push_str(&format!("      <tag>{}</tag>\n", xml_escape(tag)));
-            }
-            xml.push_str("    </tags>\n");
-        }
-        
-        if let Some(source_path) = &document.metadata.source_path {
-            xml.push_str(&format!("    <source>{}</source>\n", xml_escape(&source_path.display().to_string())));
-        }
+        xml.push_str(&format!("    <source>{}</source>\n", xml_escape(&document.metadata.source)));
         
         xml.push_str("  </metadata>\n");
         
         // Content section
         xml.push_str("  <content>\n");
-        xml.push_str(&format!("    <![CDATA[{}]]>\n", document.content));
+        if let Some(text) = &document.content.text {
+            xml.push_str(&format!("    <![CDATA[{}]]>\n", text));
+        } else {
+            xml.push_str(&format!("    <![CDATA[{}]]>\n", document.content.to_string()));
+        }
         xml.push_str("  </content>\n");
         
-        // Extracted text section (if different from content)
-        if document.extracted_text != document.content && !document.extracted_text.is_empty() {
-            xml.push_str("  <extracted_text>\n");
-            xml.push_str(&format!("    <![CDATA[{}]]>\n", document.extracted_text));
-            xml.push_str("  </extracted_text>\n");
+        // Images section (if any)
+        if !document.content.images.is_empty() {
+            xml.push_str("  <images>\n");
+            for image in &document.content.images {
+                xml.push_str("    <image>\n");
+                xml.push_str(&format!("      <id>{}</id>\n", xml_escape(&image.id)));
+                xml.push_str(&format!("      <format>{}</format>\n", xml_escape(&image.format)));
+                xml.push_str(&format!("      <width>{}</width>\n", image.width));
+                xml.push_str(&format!("      <height>{}</height>\n", image.height));
+                if let Some(caption) = &image.caption {
+                    xml.push_str(&format!("      <caption>{}</caption>\n", xml_escape(caption)));
+                }
+                xml.push_str("    </image>\n");
+            }
+            xml.push_str("  </images>\n");
+        }
+        
+        // Tables section (if any)
+        if !document.content.tables.is_empty() {
+            xml.push_str("  <tables>\n");
+            for table in &document.content.tables {
+                xml.push_str("    <table>\n");
+                xml.push_str(&format!("      <id>{}</id>\n", xml_escape(&table.id)));
+                if let Some(caption) = &table.caption {
+                    xml.push_str(&format!("      <caption>{}</caption>\n", xml_escape(caption)));
+                }
+                xml.push_str("      <headers>\n");
+                for header in &table.headers {
+                    xml.push_str(&format!("        <header>{}</header>\n", xml_escape(header)));
+                }
+                xml.push_str("      </headers>\n");
+                xml.push_str("      <rows>\n");
+                for row in &table.rows {
+                    xml.push_str("        <row>\n");
+                    for cell in row {
+                        xml.push_str(&format!("          <cell>{}</cell>\n", xml_escape(cell)));
+                    }
+                    xml.push_str("        </row>\n");
+                }
+                xml.push_str("      </rows>\n");
+                xml.push_str("    </table>\n");
+            }
+            xml.push_str("  </tables>\n");
         }
         
         // Raw content (base64 encoded)
@@ -96,10 +135,10 @@ impl DocumentOutput for XmlOutput {
             xml.push_str("  </raw_content>\n");
         }
         
-        // Structure section (if available)
-        if let Some(structure) = &document.structure {
+        // Structure section
+        if document.structure.page_count.is_some() || !document.structure.sections.is_empty() {
             xml.push_str("  <structure>\n");
-            xml.push_str(&format!("    <![CDATA[{}]]>\n", serde_json::to_string_pretty(structure)?));
+            xml.push_str(&format!("    <![CDATA[{}]]>\n", serde_json::to_string_pretty(&document.structure)?));
             xml.push_str("  </structure>\n");
         }
         
@@ -108,8 +147,9 @@ impl DocumentOutput for XmlOutput {
             xml.push_str("  <attachments>\n");
             for attachment in &document.attachments {
                 xml.push_str("    <attachment>\n");
+                xml.push_str(&format!("      <id>{}</id>\n", xml_escape(&attachment.id)));
                 xml.push_str(&format!("      <name>{}</name>\n", xml_escape(&attachment.name)));
-                xml.push_str(&format!("      <size>{}</size>\n", attachment.size));
+                xml.push_str(&format!("      <size>{}</size>\n", attachment.data.len()));
                 xml.push_str(&format!("      <mime_type>{}</mime_type>\n", xml_escape(&attachment.mime_type)));
                 if !attachment.data.is_empty() {
                     xml.push_str("      <data encoding=\"base64\">\n");
@@ -137,7 +177,6 @@ fn xml_escape(text: &str) -> String {
 
 fn base64_encode(data: &[u8]) -> String {
     // Simple base64 encoding - in real implementation, use base64 crate
-    use std::collections::HashMap;
     
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     
@@ -175,9 +214,10 @@ fn base64_encode(data: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use neural_doc_flow_core::{DocumentMetadata};
+    use neural_doc_flow_core::{DocumentMetadata, DocumentContent, DocumentStructure, DocumentType, DocumentSourceType};
     use uuid::Uuid;
     use chrono::Utc;
+    use std::collections::HashMap;
     
     #[test]
     fn test_xml_escape() {
@@ -196,25 +236,36 @@ mod tests {
         let output = XmlOutput::new();
         
         let metadata = DocumentMetadata {
-            id: Uuid::new_v4(),
-            title: "Test Document & Example".to_string(),
-            author: Some("Test Author".to_string()),
-            created_at: Utc::now(),
-            modified_at: Utc::now(),
-            source_path: None,
-            format: "test".to_string(),
-            size: 100,
+            title: Some("Test Document & Example".to_string()),
+            authors: vec!["Test Author".to_string()],
+            source: "test.txt".to_string(),
+            mime_type: "text/plain".to_string(),
+            size: Some(100),
             language: Some("en".to_string()),
-            tags: vec!["test".to_string(), "example".to_string()],
+            custom: HashMap::new(),
         };
         
+        let content = DocumentContent {
+            text: Some("Test content\n\nThis is a <test> document.".to_string()),
+            images: Vec::new(),
+            tables: Vec::new(),
+            structured: HashMap::new(),
+            raw: Some(b"Test content".to_vec()),
+        };
+        
+        let now = Utc::now();
         let document = Document {
-            metadata,
-            content: "Test content\n\nThis is a <test> document.".to_string(),
+            id: Uuid::new_v4(),
+            doc_type: DocumentType::Text,
+            source_type: DocumentSourceType::File,
             raw_content: b"Test content".to_vec(),
-            extracted_text: "Test content".to_string(),
-            structure: None,
+            metadata,
+            content,
+            structure: DocumentStructure::default(),
             attachments: Vec::new(),
+            processing_history: Vec::new(),
+            created_at: now,
+            updated_at: now,
         };
         
         let bytes = output.generate_bytes(&document).await.unwrap();
@@ -224,8 +275,6 @@ mod tests {
         assert!(xml_str.contains("<document>"));
         assert!(xml_str.contains("<title>Test Document &amp; Example</title>"));
         assert!(xml_str.contains("<author>Test Author</author>"));
-        assert!(xml_str.contains("<tag>test</tag>"));
-        assert!(xml_str.contains("<tag>example</tag>"));
         assert!(xml_str.contains("This is a <test> document."));
         assert!(xml_str.contains("</document>"));
     }

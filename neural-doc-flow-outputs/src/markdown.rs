@@ -40,56 +40,88 @@ impl DocumentOutput for MarkdownOutput {
         let mut markdown = String::new();
         
         // Document title
-        markdown.push_str(&format!("# {}\n\n", document.metadata.title));
+        let title = document.metadata.title.as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or("Untitled Document");
+        markdown.push_str(&format!("# {}\n\n", title));
         
         // Metadata section
         markdown.push_str("## Metadata\n\n");
-        markdown.push_str(&format!("- **ID**: {}\n", document.metadata.id));
-        if let Some(author) = &document.metadata.author {
-            markdown.push_str(&format!("- **Author**: {}\n", author));
+        markdown.push_str(&format!("- **ID**: {}\n", document.id));
+        if !document.metadata.authors.is_empty() {
+            markdown.push_str(&format!("- **Authors**: {}\n", document.metadata.authors.join(", ")));
         }
-        markdown.push_str(&format!("- **Format**: {}\n", document.metadata.format));
-        markdown.push_str(&format!("- **Size**: {} bytes\n", document.metadata.size));
-        markdown.push_str(&format!("- **Created**: {}\n", document.metadata.created_at.format("%Y-%m-%d %H:%M:%S UTC")));
-        markdown.push_str(&format!("- **Modified**: {}\n", document.metadata.modified_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        markdown.push_str(&format!("- **MIME Type**: {}\n", document.metadata.mime_type));
+        if let Some(size) = document.metadata.size {
+            markdown.push_str(&format!("- **Size**: {} bytes\n", size));
+        }
+        markdown.push_str(&format!("- **Created**: {}\n", document.created_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        markdown.push_str(&format!("- **Modified**: {}\n", document.updated_at.format("%Y-%m-%d %H:%M:%S UTC")));
         
         if let Some(language) = &document.metadata.language {
             markdown.push_str(&format!("- **Language**: {}\n", language));
         }
         
-        if !document.metadata.tags.is_empty() {
-            markdown.push_str(&format!("- **Tags**: {}\n", document.metadata.tags.join(", ")));
-        }
-        
-        if let Some(source_path) = &document.metadata.source_path {
-            markdown.push_str(&format!("- **Source**: {}\n", source_path.display()));
-        }
+        markdown.push_str(&format!("- **Source**: {}\n", document.metadata.source));
         
         markdown.push('\n');
         
         // Content section
         markdown.push_str("## Content\n\n");
-        markdown.push_str(&document.content);
+        if let Some(text) = &document.content.text {
+            markdown.push_str(text);
+        } else {
+            markdown.push_str(&format!("{}", document.content));
+        }
         markdown.push('\n');
         
-        // Extracted text section (if different from content)
-        if document.extracted_text != document.content && !document.extracted_text.is_empty() {
-            markdown.push_str("\n## Extracted Text\n\n");
-            markdown.push_str(&document.extracted_text);
-            markdown.push('\n');
+        // Images section (if any)
+        if !document.content.images.is_empty() {
+            markdown.push_str("\n## Images\n\n");
+            for (i, image) in document.content.images.iter().enumerate() {
+                markdown.push_str(&format!("{}. {} ({}x{})\n", i + 1, image.id, image.width, image.height));
+                if let Some(caption) = &image.caption {
+                    markdown.push_str(&format!("   Caption: {}\n", caption));
+                }
+            }
         }
         
-        // Structure section (if available)
-        if let Some(structure) = &document.structure {
-            markdown.push_str("\n## Structure\n\n");
-            markdown.push_str(&format!("```json\n{}\n```\n", serde_json::to_string_pretty(structure)?));
+        // Tables section (if any)
+        if !document.content.tables.is_empty() {
+            markdown.push_str("\n## Tables\n\n");
+            for (i, table) in document.content.tables.iter().enumerate() {
+                markdown.push_str(&format!("### Table {} - {}\n\n", i + 1, table.caption.as_ref()
+                    .map(|s| s.as_str())
+                    .unwrap_or(&table.id)));
+                
+                // Table headers
+                markdown.push_str(&format!("| {} |\n", table.headers.join(" | ")));
+                markdown.push_str(&format!("| {} |\n", vec!["---"; table.headers.len()].join(" | ")));
+                
+                // Table rows
+                for row in &table.rows {
+                    markdown.push_str(&format!("| {} |\n", row.join(" | ")));
+                }
+                markdown.push('\n');
+            }
+        }
+        
+        // Structure section
+        if document.structure.page_count.is_some() || !document.structure.sections.is_empty() {
+            markdown.push_str("\n## Document Structure\n\n");
+            if let Some(page_count) = document.structure.page_count {
+                markdown.push_str(&format!("- **Pages**: {}\n", page_count));
+            }
+            if !document.structure.sections.is_empty() {
+                markdown.push_str(&format!("- **Sections**: {}\n", document.structure.sections.len()));
+            }
         }
         
         // Attachments section (if any)
         if !document.attachments.is_empty() {
             markdown.push_str("\n## Attachments\n\n");
             for (i, attachment) in document.attachments.iter().enumerate() {
-                markdown.push_str(&format!("{}. {} ({} bytes)\n", i + 1, attachment.name, attachment.size));
+                markdown.push_str(&format!("{}. {} ({} bytes)\n", i + 1, attachment.name, attachment.data.len()));
             }
             markdown.push('\n');
         }
@@ -101,34 +133,46 @@ impl DocumentOutput for MarkdownOutput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use neural_doc_flow_core::{DocumentMetadata};
+    use neural_doc_flow_core::{DocumentMetadata, DocumentContent, DocumentStructure, DocumentType, DocumentSourceType};
     use uuid::Uuid;
     use chrono::Utc;
+    use std::collections::HashMap;
     
     #[tokio::test]
     async fn test_markdown_output() {
         let output = MarkdownOutput::new();
         
         let metadata = DocumentMetadata {
-            id: Uuid::new_v4(),
-            title: "Test Document".to_string(),
-            author: Some("Test Author".to_string()),
-            created_at: Utc::now(),
-            modified_at: Utc::now(),
-            source_path: None,
-            format: "test".to_string(),
-            size: 100,
+            title: Some("Test Document".to_string()),
+            authors: vec!["Test Author".to_string()],
+            source: "test.txt".to_string(),
+            mime_type: "text/plain".to_string(),
+            size: Some(100),
             language: Some("en".to_string()),
-            tags: vec!["test".to_string(), "example".to_string()],
+            custom: HashMap::new(),
         };
         
+        let content = DocumentContent {
+            text: Some("Test content\n\nThis is a test document.".to_string()),
+            images: Vec::new(),
+            tables: Vec::new(),
+            structured: HashMap::new(),
+            raw: Some(b"Test content".to_vec()),
+        };
+        
+        let now = Utc::now();
         let document = Document {
-            metadata,
-            content: "Test content\n\nThis is a test document.".to_string(),
+            id: Uuid::new_v4(),
+            doc_type: DocumentType::Text,
+            source_type: DocumentSourceType::File,
             raw_content: b"Test content".to_vec(),
-            extracted_text: "Test content".to_string(),
-            structure: None,
+            metadata,
+            content,
+            structure: DocumentStructure::default(),
             attachments: Vec::new(),
+            processing_history: Vec::new(),
+            created_at: now,
+            updated_at: now,
         };
         
         let bytes = output.generate_bytes(&document).await.unwrap();
@@ -136,8 +180,7 @@ mod tests {
         
         assert!(markdown_str.contains("# Test Document"));
         assert!(markdown_str.contains("## Metadata"));
-        assert!(markdown_str.contains("**Author**: Test Author"));
-        assert!(markdown_str.contains("**Tags**: test, example"));
+        assert!(markdown_str.contains("**Authors**: Test Author"));
         assert!(markdown_str.contains("## Content"));
         assert!(markdown_str.contains("This is a test document."));
     }

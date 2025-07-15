@@ -45,15 +45,11 @@ impl DocumentOutput for HtmlOutput {
         html.push_str("<head>\n");
         html.push_str("    <meta charset=\"UTF-8\">\n");
         html.push_str("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
-        html.push_str(&format!("    <title>{}</title>\n", html_escape(&document.metadata.title)));
+        let title = document.metadata.title.as_deref().unwrap_or("Untitled Document");
+        html.push_str(&format!("    <title>{}</title>\n", html_escape(title)));
         
-        if let Some(author) = &document.metadata.author {
-            html.push_str(&format!("    <meta name=\"author\" content=\"{}\">\n", html_escape(author)));
-        }
-        
-        if !document.metadata.tags.is_empty() {
-            html.push_str(&format!("    <meta name=\"keywords\" content=\"{}\">\n", 
-                html_escape(&document.metadata.tags.join(", "))));
+        if !document.metadata.authors.is_empty() {
+            html.push_str(&format!("    <meta name=\"author\" content=\"{}\">\n", html_escape(&document.metadata.authors.join(", "))));
         }
         
         // Basic CSS styling
@@ -70,60 +66,94 @@ impl DocumentOutput for HtmlOutput {
         html.push_str("<body>\n");
         
         // Document title
-        html.push_str(&format!("    <h1>{}</h1>\n", html_escape(&document.metadata.title)));
+        let title = document.metadata.title.as_deref().unwrap_or("Untitled Document");
+        html.push_str(&format!("    <h1>{}</h1>\n", html_escape(title)));
         
         // Metadata section
         html.push_str("    <div class=\"metadata\">\n");
         html.push_str("        <h2>Metadata</h2>\n");
-        html.push_str(&format!("        <div class=\"metadata-item\"><strong>ID:</strong> {}</div>\n", document.metadata.id));
+        html.push_str(&format!("        <div class=\"metadata-item\"><strong>ID:</strong> {}</div>\n", document.id));
         
-        if let Some(author) = &document.metadata.author {
-            html.push_str(&format!("        <div class=\"metadata-item\"><strong>Author:</strong> {}</div>\n", html_escape(author)));
+        if !document.metadata.authors.is_empty() {
+            html.push_str(&format!("        <div class=\"metadata-item\"><strong>Authors:</strong> {}</div>\n", html_escape(&document.metadata.authors.join(", "))));
         }
         
-        html.push_str(&format!("        <div class=\"metadata-item\"><strong>Format:</strong> {}</div>\n", document.metadata.format));
-        html.push_str(&format!("        <div class=\"metadata-item\"><strong>Size:</strong> {} bytes</div>\n", document.metadata.size));
+        html.push_str(&format!("        <div class=\"metadata-item\"><strong>MIME Type:</strong> {}</div>\n", document.metadata.mime_type));
+        if let Some(size) = document.metadata.size {
+            html.push_str(&format!("        <div class=\"metadata-item\"><strong>Size:</strong> {} bytes</div>\n", size));
+        }
         html.push_str(&format!("        <div class=\"metadata-item\"><strong>Created:</strong> {}</div>\n", 
-            document.metadata.created_at.format("%Y-%m-%d %H:%M:%S UTC")));
+            document.created_at.format("%Y-%m-%d %H:%M:%S UTC")));
         html.push_str(&format!("        <div class=\"metadata-item\"><strong>Modified:</strong> {}</div>\n", 
-            document.metadata.modified_at.format("%Y-%m-%d %H:%M:%S UTC")));
+            document.updated_at.format("%Y-%m-%d %H:%M:%S UTC")));
         
         if let Some(language) = &document.metadata.language {
             html.push_str(&format!("        <div class=\"metadata-item\"><strong>Language:</strong> {}</div>\n", language));
         }
         
-        if !document.metadata.tags.is_empty() {
-            html.push_str(&format!("        <div class=\"metadata-item\"><strong>Tags:</strong> {}</div>\n", 
-                html_escape(&document.metadata.tags.join(", "))));
-        }
-        
-        if let Some(source_path) = &document.metadata.source_path {
-            html.push_str(&format!("        <div class=\"metadata-item\"><strong>Source:</strong> {}</div>\n", 
-                html_escape(&source_path.display().to_string())));
-        }
+        html.push_str(&format!("        <div class=\"metadata-item\"><strong>Source:</strong> {}</div>\n", 
+            html_escape(&document.metadata.source)));
         
         html.push_str("    </div>\n");
         
         // Content section
         html.push_str("    <div class=\"content\">\n");
         html.push_str("        <h2>Content</h2>\n");
-        html.push_str(&format!("        <div>{}</div>\n", html_escape(&document.content).replace('\n', "<br>\n")));
+        if let Some(text) = &document.content.text {
+            html.push_str(&format!("        <div>{}</div>\n", html_escape(text).replace('\n', "<br>\n")));
+        } else {
+            let content_str = document.content.to_string();
+            html.push_str(&format!("        <div>{}</div>\n", html_escape(&content_str).replace('\n', "<br>\n")));
+        }
         html.push_str("    </div>\n");
         
-        // Extracted text section (if different from content)
-        if document.extracted_text != document.content && !document.extracted_text.is_empty() {
+        // Images section (if any)
+        if !document.content.images.is_empty() {
             html.push_str("    <div class=\"content\">\n");
-            html.push_str("        <h2>Extracted Text</h2>\n");
-            html.push_str(&format!("        <div>{}</div>\n", html_escape(&document.extracted_text).replace('\n', "<br>\n")));
+            html.push_str("        <h2>Images</h2>\n");
+            html.push_str("        <ul>\n");
+            for image in &document.content.images {
+                html.push_str(&format!("            <li>{} ({}x{})</li>\n", 
+                    html_escape(&image.id), image.width, image.height));
+            }
+            html.push_str("        </ul>\n");
             html.push_str("    </div>\n");
         }
         
-        // Structure section (if available)
-        if let Some(structure) = &document.structure {
+        // Tables section (if any)
+        if !document.content.tables.is_empty() {
+            html.push_str("    <div class=\"content\">\n");
+            html.push_str("        <h2>Tables</h2>\n");
+            for table in &document.content.tables {
+                html.push_str(&format!("        <h3>{}</h3>\n", html_escape(&table.id)));
+                html.push_str("        <table border=\"1\">\n");
+                
+                // Headers
+                html.push_str("            <tr>\n");
+                for header in &table.headers {
+                    html.push_str(&format!("                <th>{}</th>\n", html_escape(header)));
+                }
+                html.push_str("            </tr>\n");
+                
+                // Rows
+                for row in &table.rows {
+                    html.push_str("            <tr>\n");
+                    for cell in row {
+                        html.push_str(&format!("                <td>{}</td>\n", html_escape(cell)));
+                    }
+                    html.push_str("            </tr>\n");
+                }
+                html.push_str("        </table>\n");
+            }
+            html.push_str("    </div>\n");
+        }
+        
+        // Structure section
+        if document.structure.page_count.is_some() || !document.structure.sections.is_empty() {
             html.push_str("    <div class=\"structure\">\n");
-            html.push_str("        <h2>Structure</h2>\n");
+            html.push_str("        <h2>Document Structure</h2>\n");
             html.push_str("        <pre><code>");
-            html.push_str(&html_escape(&serde_json::to_string_pretty(structure)?));
+            html.push_str(&html_escape(&serde_json::to_string_pretty(&document.structure)?));
             html.push_str("</code></pre>\n");
             html.push_str("    </div>\n");
         }
@@ -135,7 +165,7 @@ impl DocumentOutput for HtmlOutput {
             html.push_str("        <ul>\n");
             for attachment in &document.attachments {
                 html.push_str(&format!("            <li>{} ({} bytes)</li>\n", 
-                    html_escape(&attachment.name), attachment.size));
+                    html_escape(&attachment.name), attachment.data.len()));
             }
             html.push_str("        </ul>\n");
             html.push_str("    </div>\n");
@@ -159,9 +189,10 @@ fn html_escape(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use neural_doc_flow_core::{DocumentMetadata};
+    use neural_doc_flow_core::{DocumentMetadata, DocumentContent, DocumentStructure, DocumentType, DocumentSourceType};
     use uuid::Uuid;
     use chrono::Utc;
+    use std::collections::HashMap;
     
     #[test]
     fn test_html_escape() {
@@ -174,25 +205,36 @@ mod tests {
         let output = HtmlOutput::new();
         
         let metadata = DocumentMetadata {
-            id: Uuid::new_v4(),
-            title: "Test Document & Example".to_string(),
-            author: Some("Test Author".to_string()),
-            created_at: Utc::now(),
-            modified_at: Utc::now(),
-            source_path: None,
-            format: "test".to_string(),
-            size: 100,
+            title: Some("Test Document & Example".to_string()),
+            authors: vec!["Test Author".to_string()],
+            source: "test.txt".to_string(),
+            mime_type: "text/plain".to_string(),
+            size: Some(100),
             language: Some("en".to_string()),
-            tags: vec!["test".to_string(), "example".to_string()],
+            custom: HashMap::new(),
         };
         
+        let content = DocumentContent {
+            text: Some("Test content\n\nThis is a <test> document.".to_string()),
+            images: Vec::new(),
+            tables: Vec::new(),
+            structured: HashMap::new(),
+            raw: Some(b"Test content".to_vec()),
+        };
+        
+        let now = Utc::now();
         let document = Document {
-            metadata,
-            content: "Test content\n\nThis is a <test> document.".to_string(),
+            id: Uuid::new_v4(),
+            doc_type: DocumentType::Text,
+            source_type: DocumentSourceType::File,
             raw_content: b"Test content".to_vec(),
-            extracted_text: "Test content".to_string(),
-            structure: None,
+            metadata,
+            content,
+            structure: DocumentStructure::default(),
             attachments: Vec::new(),
+            processing_history: Vec::new(),
+            created_at: now,
+            updated_at: now,
         };
         
         let bytes = output.generate_bytes(&document).await.unwrap();
@@ -201,8 +243,7 @@ mod tests {
         assert!(html_str.contains("<!DOCTYPE html>"));
         assert!(html_str.contains("<title>Test Document &amp; Example</title>"));
         assert!(html_str.contains("<h1>Test Document &amp; Example</h1>"));
-        assert!(html_str.contains("<strong>Author:</strong> Test Author"));
-        assert!(html_str.contains("<strong>Tags:</strong> test, example"));
+        assert!(html_str.contains("<strong>Authors:</strong> Test Author"));
         assert!(html_str.contains("This is a &lt;test&gt; document."));
         assert!(html_str.contains("</html>"));
     }
